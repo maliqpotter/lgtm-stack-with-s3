@@ -1,7 +1,6 @@
 services:
   minio:
     image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
-    image: harbornewdev.vasdev.co.id/vascomm-tools/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -43,7 +42,6 @@ services:
 
   loki:
     image: grafana/loki:3.6.7
-    image: harbornewdev.vasdev.co.id/vascomm-tools/loki:3.6.7
     container_name: loki
     restart: unless-stopped
     user: root
@@ -61,7 +59,6 @@ services:
 
   tempo:
     image: grafana/tempo:2.10.1
-    image: harbornewdev.vasdev.co.id/vascomm-tools/tempo:2.10.1
     container_name: tempo
     restart: unless-stopped
     command: "-target=all -config.file=/etc/tempo.yaml"
@@ -78,7 +75,6 @@ services:
 
   mimir:
     image: grafana/mimir:3.0.4
-    image: harbornewdev.vasdev.co.id/vascomm-tools/mimir:3.0.4
     container_name: mimir
     restart: unless-stopped
     command: ["-config.file=/etc/mimir/config.yaml"]
@@ -95,7 +91,6 @@ services:
 
   alloy:
     image: grafana/alloy:v1.14.0
-    image: harbornewdev.vasdev.co.id/vascomm-tools/alloy:v1.14.0
     container_name: alloy
     restart: unless-stopped
     privileged: true
@@ -119,7 +114,6 @@ services:
 
   grafana:
     image: grafana/grafana-oss:12.4.1
-    image: harbornewdev.vasdev.co.id/vascomm-tools/grafana-oss:12.4.1
     container_name: grafana
     restart: unless-stopped
     ports:
