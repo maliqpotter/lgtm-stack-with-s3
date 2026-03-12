@@ -69,3 +69,4 @@ alertmanager_storage:
 
 limits:
   native_histograms_ingestion_enabled: true
+  compactor_blocks_retention_period: 72h

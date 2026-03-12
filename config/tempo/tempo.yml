@@ -28,7 +28,7 @@ ingester:
 
 compactor:
   compaction:
-    block_retention: 48h
+    block_retention: 72h
 
 metrics_generator:
   registry:
