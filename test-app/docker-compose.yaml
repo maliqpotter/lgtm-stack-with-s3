@@ -1,0 +1,17 @@
+services:
+  test-app:
+    build: .
+    container_name: test-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+      - OTEL_SERVICE_NAME=test-api
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring

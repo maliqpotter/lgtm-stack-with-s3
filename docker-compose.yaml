@@ -1,0 +1,154 @@
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: harbornewdev.vasdev.co.id/vascomm-tools/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitoring
+
+  minio-init:
+    image: minio/mc
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin123;
+      mc mb --ignore-existing local/loki-data;
+      mc mb --ignore-existing local/tempo-data;
+      mc mb --ignore-existing local/mimir-data;
+      echo 'Buckets created successfully';
+      "
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:3.6.7
+    image: harbornewdev.vasdev.co.id/vascomm-tools/loki:3.6.7
+    container_name: loki
+    restart: unless-stopped
+    user: root
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - monitoring
+
+  tempo:
+    image: grafana/tempo:2.10.1
+    image: harbornewdev.vasdev.co.id/vascomm-tools/tempo:2.10.1
+    container_name: tempo
+    restart: unless-stopped
+    command: "-target=all -config.file=/etc/tempo.yaml"
+    volumes:
+      - ./config/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # HTTP API
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - monitoring
+
+  mimir:
+    image: grafana/mimir:3.0.4
+    image: harbornewdev.vasdev.co.id/vascomm-tools/mimir:3.0.4
+    container_name: mimir
+    restart: unless-stopped
+    command: ["-config.file=/etc/mimir/config.yaml"]
+    volumes:
+      - ./config/mimir/mimir-config.yml:/etc/mimir/config.yaml:ro
+      - mimir-data:/tmp/mimir
+    ports:
+      - "9009:9009"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - monitoring
+
+  alloy:
+    image: grafana/alloy:v1.14.0
+    image: harbornewdev.vasdev.co.id/vascomm-tools/alloy:v1.14.0
+    container_name: alloy
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "12345:12345"  # Alloy UI
+      - "4317:4317"   # OTLP gRPC (entry point for apps)
+      - "4318:4318"   # OTLP HTTP (entry point for apps)
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - /etc/alloy/config.alloy
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+
+  grafana:
+    image: grafana/grafana-oss:12.4.1
+    image: harbornewdev.vasdev.co.id/vascomm-tools/grafana-oss:12.4.1
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+    networks:
+      - monitoring
+
+volumes:
+  minio-data:
+    name: minio-data
+  loki-data:
+    name: loki-data
+  tempo-data:
+    name: tempo-data
+  mimir-data:
+    name: mimir-data
+  grafana-data:
+    name: grafana-data
+
+networks:
+  monitoring:
+    name: monitoring
+    driver: bridge

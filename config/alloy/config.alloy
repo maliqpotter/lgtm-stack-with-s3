@@ -1,0 +1,88 @@
+// ============================================================
+// OTLP Receiver — single entry point for all telemetry
+// Apps send traces, metrics, and logs here via OTLP
+// gRPC: 4317, HTTP: 4318
+// ============================================================
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.mimir.input]
+    logs    = [otelcol.exporter.loki.default.input]
+  }
+}
+
+// ============================================================
+// Traces → Tempo (OTLP gRPC)
+// ============================================================
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ============================================================
+// Metrics → Mimir (Prometheus Remote Write)
+// ============================================================
+
+otelcol.exporter.prometheus "mimir" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+  }
+}
+
+// ============================================================
+// Logs → Loki (via OTLP converted to Loki format)
+// ============================================================
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ============================================================
+// Docker Log Collection → Loki
+// Automatically discovers and collects logs from all Docker containers
+// ============================================================
+
+discovery.docker "dockerlogs" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "dockerlogs" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex = "/(.*)"
+    target_label = "service"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.dockerlogs.targets
+  labels     = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.dockerlogs.rules
+  forward_to = [loki.write.default.receiver]
+}
