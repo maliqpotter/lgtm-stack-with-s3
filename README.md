@@ -41,13 +41,11 @@ Access endpoints:
 - MinIO: http://localhost:9001 (minioadmin / minioadmin123)
 
 ### Phase 2: Sync Images for Offline Kubernetes
-Since your Kubernetes cluster is air-gapped, you must sync the required images to your private Harbor registry.
+Since your Kubernetes cluster is air-gapped, you must sync the required images to your private container registry (e.g., GHCR, Harbor, Docker Hub).
 
-1. Ensure you are logged in to your registry: `docker login harbornewdev.vasdev.co.id`
-2. Run the sync script:
-```bash
-./sync-images-harbor.sh
-```
+1. Ensure you are logged in to your registry: `docker login ghcr.io`
+2. Pull the required images and push them to your private registry. (You may create a sync script for automation)
+
 
 ### Phase 3: Deploy to Kubernetes
 Move the generated YAML files to your Kubernetes cluster and apply them.
@@ -67,11 +65,11 @@ kubectl apply -f kubernetes-config/alloy-k8s.yaml
 
 A sample Go application is provided in the `test-app/` directory to verify the full stack inside Kubernetes. This app automatically generates background jobs, errors, and traces every 3 seconds.
 
-1. **Build and push to your Harbor**:
+1. **Build and push to your registry**:
 ```bash
 cd test-app
-docker build -t harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest .
-docker push harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest
+docker build -t ghcr.io/your-username/test-api:latest .
+docker push ghcr.io/your-username/test-api:latest
 ```
 
 2. **Deploy to K8s**:

@@ -17,9 +17,9 @@ spec:
     spec:
       containers:
         - name: test-app
-          # Pastikan Anda sudah membuild dan push image ini ke Harbor Anda terlebih dahulu
-          # Contoh: docker build -t harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest .
-          image: harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest
+          # Pastikan Anda sudah membuild dan push image ini ke registry Anda terlebih dahulu
+          # Contoh: docker build -t ghcr.io/your-username/test-api:latest .
+          image: ghcr.io/your-username/test-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
