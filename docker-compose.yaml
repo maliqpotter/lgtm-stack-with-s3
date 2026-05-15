@@ -1,6 +1,6 @@
 services:
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: ghcr.io/maliqpotter/minio:release.2025-04-22t22-12-26z
     container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -21,7 +21,7 @@ services:
       - monitoring
 
   minio-init:
-    image: minio/mc
+    image: ghcr.io/maliqpotter/mc:latest
     container_name: minio-init
     depends_on:
       minio:
@@ -41,7 +41,7 @@ services:
       - monitoring
 
   loki:
-    image: grafana/loki:3.6.7
+    image: ghcr.io/maliqpotter/loki:3.7
     container_name: loki
     restart: unless-stopped
     user: root
@@ -58,7 +58,7 @@ services:
       - monitoring
 
   tempo:
-    image: grafana/tempo:2.10.1
+    image: ghcr.io/maliqpotter/tempo:2.10.5
     container_name: tempo
     restart: unless-stopped
     command: "-target=all -config.file=/etc/tempo.yaml"
@@ -74,7 +74,7 @@ services:
       - monitoring
 
   mimir:
-    image: grafana/mimir:3.0.4
+    image: ghcr.io/maliqpotter/mimir:3.0.6
     container_name: mimir
     restart: unless-stopped
     command: ["-config.file=/etc/mimir/config.yaml"]
@@ -90,7 +90,7 @@ services:
       - monitoring
 
   alloy:
-    image: grafana/alloy:v1.14.0
+    image: ghcr.io/maliqpotter/alloy:v1.16.1
     container_name: alloy
     restart: unless-stopped
     privileged: true
@@ -113,7 +113,7 @@ services:
       - mimir
 
   grafana:
-    image: grafana/grafana-oss:12.4.1
+    image: ghcr.io/maliqpotter/grafana-oss:13.0.1-security-01
     container_name: grafana
     restart: unless-stopped
     ports:

@@ -387,6 +387,38 @@ func simulateWork(ctx context.Context, operation string) {
 	span.SetAttributes(attribute.Float64("duration_ms", float64(delay.Milliseconds())))
 }
 
+func backgroundWorker(ctx context.Context) {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.InfoContext(ctx, "background worker shutting down")
+			return
+		case <-ticker.C:
+			jobID := rand.Intn(10000)
+			jobCtx, span := tracer.Start(ctx, "backgroundJob", trace.WithAttributes(attribute.Int("job.id", jobID)))
+
+			logger.InfoContext(jobCtx, "starting background processing job", "job_id", jobID)
+			simulateWork(jobCtx, "processData")
+
+			status := rand.Intn(10)
+			if status < 2 {
+				err := fmt.Errorf("connection timeout to downstream service")
+				span.SetStatus(codes.Error, err.Error())
+				span.RecordError(err)
+				logger.ErrorContext(jobCtx, "background job failed", "job_id", jobID, "error", err)
+			} else if status < 4 {
+				logger.WarnContext(jobCtx, "background job completed with warnings", "job_id", jobID, "retries", 1)
+			} else {
+				logger.InfoContext(jobCtx, "background job completed successfully", "job_id", jobID)
+			}
+			span.End()
+		}
+	}
+}
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -402,6 +434,9 @@ func main() {
 	if err := initMetrics(); err != nil {
 		log.Fatalf("failed to init metrics: %v", err)
 	}
+
+	// Start background worker to generate more logs and traces
+	go backgroundWorker(ctx)
 
 	// Routes
 	mux := http.NewServeMux()

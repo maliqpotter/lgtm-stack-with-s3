@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+  namespace: default
+  labels:
+    app: test-app
+spec:
+  replicas: 2 # Bisa diubah sesuai kebutuhan (misal jadi lebih kompleks)
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      labels:
+        app: test-app
+    spec:
+      containers:
+        - name: test-app
+          # Pastikan Anda sudah membuild dan push image ini ke Harbor Anda terlebih dahulu
+          # Contoh: docker build -t harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest .
+          image: harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "test-api"
+            # Karena K8s Anda ada di tempat terpisah, Anda bisa menembak OTLP langsung ke Server Monitoring
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://<IP_SERVER_MONITORING>:4318" 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-app
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: test-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

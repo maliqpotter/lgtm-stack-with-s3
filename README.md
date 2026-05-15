@@ -1,132 +1,86 @@
-# LGTM Monitoring Stack
+# LGTM Monitoring Stack (Air-Gapped Kubernetes Edition)
 
-Full observability stack powered by Grafana's **LGTM** ecosystem with S3-compatible object storage.
+Full observability stack powered by Grafana's **LGTM** ecosystem with S3-compatible object storage, specifically designed to monitor an **Offline/Air-Gapped Kubernetes Cluster**.
 
-| Component | Role | Port |
-|-----------|------|------|
-| **Loki** | Log aggregation | `3100` |
-| **Grafana** | Dashboards & visualization | `3000` |
-| **Tempo** | Distributed tracing | `3200` |
-| **Mimir** | Metrics storage (Prometheus-compatible) | `9009` |
-| **Alloy** | Unified telemetry collector (OTLP) | `12345` (UI) |
-| **MinIO** | S3 object storage backend | `9000` (API) / `9001` (Console) |
+| Component | Role |
+|-----------|------|
+| **Loki** | Log aggregation |
+| **Grafana** | Dashboards & visualization |
+| **Tempo** | Distributed tracing |
+| **Mimir** | Metrics storage (Prometheus-compatible) |
+| **Alloy** | Unified telemetry collector (OTLP) |
+| **MinIO** | S3 object storage backend |
 
 ## Architecture
 
-```
-┌──────────────────────┐
-│     Your App(s)      │
-│  (OTLP SDK enabled)  │
-└──────┬───────────────┘
-       │ OTLP gRPC/HTTP
-       ▼
-┌──────────────┐
-│    Alloy     │──── traces ────▶ Tempo  ──┐
-│  (Collector) │──── metrics ───▶ Mimir  ──┤──▶ MinIO (S3)
-│              │──── logs ──────▶ Loki   ──┘
-└──────────────┘
-       │ Docker logs
-       └────────────────────────▶ Loki
-                                    │
-                                    ▼
-                              ┌──────────┐
-                              │ Grafana  │
-                              └──────────┘
+This setup separates the Monitoring Server (running Docker Compose) from your Application Environment (Kubernetes).
+
+```text
+[ KUBERNETES CLUSTER (Offline) ]                    [ MONITORING SERVER (Docker Compose) ]
+                                                            
++------------------+                                        +--------------------------------+
+| - CPU/RAM Node   |  Di-scrape   +---------------+         |        +--> Mimir (Metrics)    |
+| - Kube Metrics   | -----------> | Grafana Alloy |  Push   | +-------+                      |
+| - Pod Logs       |              | (DaemonSet)   | ------> | | Alloy |-> Loki  (Logs)       |
+| - App Traces     | -----------> +---------------+  OTLP   | +-------+                      |
++------------------+                                        |        +--> Tempo (Traces)     |
+                                                            |           ⬇️                   |
+                                                            |        Grafana (Dashboard)     |
+                                                            +--------------------------------+
 ```
 
 ## Getting Started
 
-### Prerequisites
-
-- **Docker Engine** ≥ 20.10
-- **Docker Compose** ≥ 2.0 (plugin) or `docker-compose` v2+
-- Minimum **4 GB RAM** available for Docker
-
-### Step 1 — Clone & Navigate
-
-```bash
-git clone <repository-url>
-cd LGTM-Monitoring
-```
-
-### Step 2 — Start the Stack
-
+### Phase 1: Start the Monitoring Server (Docker Compose)
+This server acts as the central storage and visualization hub.
 ```bash
 docker compose up -d
 ```
+Access endpoints:
+- Grafana: http://localhost:3000 (admin / admin)
+- MinIO: http://localhost:9001 (minioadmin / minioadmin123)
 
-### Step 3 — Verify All Services Are Healthy
+### Phase 2: Sync Images for Offline Kubernetes
+Since your Kubernetes cluster is air-gapped, you must sync the required images to your private Harbor registry.
 
-Wait a few seconds for services to initialize, then check:
-
+1. Ensure you are logged in to your registry: `docker login harbornewdev.vasdev.co.id`
+2. Run the sync script:
 ```bash
-# Check all container statuses
-docker compose ps
-
-# Individual health checks
-curl -s http://localhost:9000/minio/health/live && echo " ✅ MinIO"
-curl -s http://localhost:3100/ready && echo " ✅ Loki"
-curl -s http://localhost:3200/ready && echo " ✅ Tempo"
-curl -s http://localhost:9009/ready && echo " ✅ Mimir"
-curl -s http://localhost:3000/api/health && echo " ✅ Grafana"
+./sync-images-harbor.sh
 ```
 
-### Step 4 — Verify MinIO Buckets
+### Phase 3: Deploy to Kubernetes
+Move the generated YAML files to your Kubernetes cluster and apply them.
 
-Open [http://localhost:9001](http://localhost:9001) (login: `minioadmin` / `minioadmin123`).
-Verify these buckets exist: `loki-data`, `tempo-data`, `mimir-data`.
-
-### Step 5 — Open Grafana
-
-Open [http://localhost:3000](http://localhost:3000) (login: `admin` / `admin`).
-Verify datasources are provisioned under **Connections → Data sources**.
-
-### Step 6 — Verification with Test App
-
-A sample Go application is provided in the `test-app/` directory to verify the stack.
-
-1.  **Start the Test App**:
-    ```bash
-    docker compose -f test-app/docker-compose.yaml up -d
-    ```
-
-2.  **Generate Telemetry**:
-    ```bash
-    # Health check
-    curl http://localhost:8080/health
-
-    # Create a document (generates a trace with child spans and logs)
-    curl -X POST http://localhost:8080/api/documents \
-         -H "Content-Type: application/json" \
-         -d '{"title": "Test Observability", "content": "LGTM stack is working!"}'
-
-    # List documents
-    curl http://localhost:8080/api/documents
-    ```
-
-3.  **Check in Grafana**:
-    - **Traces**: Explore -> Tempo -> Search for `test-api`.
-    - **Logs**: Explore -> Loki -> `{service_name="test-api"}`.
-    - **Metrics**: Explore -> Mimir -> `http_requests_total`.
-
-## Access Points
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Grafana | http://localhost:3000 | `admin` / `admin` |
-| MinIO Console | http://localhost:9001 | `minioadmin` / `minioadmin123` |
-| Alloy UI | http://localhost:12345 | — |
-| Test API | http://localhost:8080 | — |
-
-## Cleanup
-
+**1. Kube State Metrics** (Collects K8s object states):
 ```bash
-# Stop monitoring stack
-docker compose down
-
-# Stop test app
-docker compose -f test-app/docker-compose.yaml down
-
-# Remove all volumes (caution: deletes all data)
-docker compose down -v
+kubectl apply -f kubernetes-config/kube-state-metrics.yaml
 ```
+
+**2. Grafana Alloy** (The Agent/Collector):
+*Before applying, ensure you update `IP_SERVER_MONITORING` in `kubernetes-config/alloy-k8s.yaml` to point to the IP of your Docker Compose server.*
+```bash
+kubectl apply -f kubernetes-config/alloy-k8s.yaml
+```
+
+## Test Application
+
+A sample Go application is provided in the `test-app/` directory to verify the full stack inside Kubernetes. This app automatically generates background jobs, errors, and traces every 3 seconds.
+
+1. **Build and push to your Harbor**:
+```bash
+cd test-app
+docker build -t harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest .
+docker push harbornewdev.vasdev.co.id/vascomm-tools/test-api:latest
+```
+
+2. **Deploy to K8s**:
+*Update `IP_SERVER_MONITORING` in `test-app-k8s.yaml` before applying.*
+```bash
+kubectl apply -f test-app-k8s.yaml
+```
+
+3. **Check in Grafana**:
+   - **Traces**: Explore -> Tempo -> Search for `test-api`.
+   - **Logs**: Explore -> Loki -> `{app="test-app"}` or `{service_name="test-api"}`.
+   - **Metrics**: Explore -> Mimir -> `http_requests_total`.
