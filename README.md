@@ -55,7 +55,12 @@ Move the generated YAML files to your Kubernetes cluster and apply them.
 kubectl apply -f kubernetes-config/kube-state-metrics.yaml
 ```
 
-**2. Grafana Alloy** (The Agent/Collector):
+**2. Node Exporter** (Collects physical Node/OS hardware metrics like CPU, RAM, Disk):
+```bash
+kubectl apply -f kubernetes-config/node-exporter.yaml
+```
+
+**3. Grafana Alloy** (The Agent/Collector):
 *Before applying, ensure you update `IP_SERVER_MONITORING` in `kubernetes-config/alloy-k8s.yaml` to point to the IP of your Docker Compose server.*
 ```bash
 kubectl apply -f kubernetes-config/alloy-k8s.yaml
@@ -82,3 +87,4 @@ kubectl apply -f test-app-k8s.yaml
    - **Traces**: Explore -> Tempo -> Search for `test-api`.
    - **Logs**: Explore -> Loki -> `{app="test-app"}` or `{service_name="test-api"}`.
    - **Metrics**: Explore -> Mimir -> `http_requests_total`.
+   - **Node Dashboard**: Import Dashboard ID `1860` to view hardware metrics from Node Exporter.

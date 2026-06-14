@@ -32,38 +32,121 @@ metadata:
 data:
   config.alloy: |-
     logging {
-    	level  = "info"
-    	format = "logfmt"
+      level  = "info"
+      format = "logfmt"
     }
+
+    // --- METRICS PIPELINE ---
     
-    discovery.kubernetes "pods" {
-    	role = "pod"
-    }
-    
-    discovery.kubernetes "nodes" {
-    	role = "node"
-    }
-    
+    // 1. Discovery: Cari service kube-state-metrics
     discovery.kubernetes "services" {
-    	role = "service"
+      role = "service"
     }
+
+    discovery.relabel "kube_state_metrics" {
+      targets = discovery.kubernetes.services.targets
+      rule {
+        source_labels = ["__meta_kubernetes_service_name"]
+        regex         = "kube-state-metrics"
+        action        = "keep"
+      }
+    }
+
+    // 2. Scrape: Ambil data metrics dari kube-state-metrics
+    prometheus.scrape "kube_state_metrics" {
+      targets    = discovery.relabel.kube_state_metrics.output
+      forward_to = [otelcol.receiver.prometheus.default.receiver]
+      job_name   = "kube-state-metrics"
+    }
+
+    // --- NODE EXPORTER PIPELINE ---
+
+    // 3. Discovery: Cari service node-exporter
+    discovery.relabel "node_exporter" {
+      targets = discovery.kubernetes.services.targets
+      rule {
+        source_labels = ["__meta_kubernetes_service_name"]
+        regex         = "node-exporter"
+        action        = "keep"
+      }
+    }
+
+    // 4. Scrape: Ambil data metrics dari node-exporter (CPU, RAM, Disk, Network)
+    prometheus.scrape "node_exporter" {
+      targets    = discovery.relabel.node_exporter.output
+      forward_to = [otelcol.receiver.prometheus.default.receiver]
+      job_name   = "node-exporter"
+    }
+
+    // --- BRIDGE ---
+
+    // 5. Bridge: Convert Prometheus metrics ke OTLP agar bisa dikirim lewat tunnel
+    otelcol.receiver.prometheus "default" {
+      output {
+        metrics = [otelcol.processor.batch.default.input]
+      }
+    }
+
+    // --- LOGS PIPELINE ---
+
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+
+    // Filter: Hanya ambil log dari namespace development dan monitoring
+    discovery.relabel "logs_filter" {
+      targets = discovery.kubernetes.pods.targets
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        regex         = "development|monitoring"
+        action        = "keep"
+      }
+    }
+
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.logs_filter.output
+      forward_to = [loki.process.add_label.receiver]
+    }
+
+    loki.process "add_label" {
+      forward_to = [otelcol.receiver.loki.default.receiver]
+      stage.static_labels {
+        values = {
+          cluster = "k8s-cluster",
+        }
+      }
+    }
+
+    otelcol.receiver.loki "default" {
+      output {
+        logs = [otelcol.processor.batch.default.input]
+      }
+    }
+
+    // --- PROCESSOR ---
     
-    discovery.kubernetes "endpoints" {
-    	role = "endpoints"
+    // Batch Processor mengumpulkan data sebelum dikirim (sangat penting untuk efisiensi tunnel)
+    otelcol.processor.batch "default" {
+      timeout = "5s"
+      send_batch_size = 1000
+      
+      output {
+        metrics = [otelcol.exporter.otlp.monitoring_server.input]
+        logs    = [otelcol.exporter.otlp.monitoring_server.input]
+      }
     }
-    
-    discovery.kubernetes "endpointslices" {
-    	role = "endpointslice"
-    }
-    
-    discovery.kubernetes "ingresses" {
-    	role = "ingress"
-    }
+
+    // --- EXPORTER ---
     
     otelcol.exporter.otlp "monitoring_server" {
       client {
         endpoint = sys.env("MONITORING_ENDPOINT")
         tls { insecure = true }
+      }
+      // Tambahkan queue agar lebih kuat menampung data
+      sending_queue {
+        enabled    = true
+        queue_size = 10000
       }
     }
 ---
@@ -282,6 +365,7 @@ spec:
             - --server.http.listen-addr=0.0.0.0:12345
             - --server.http.ui-path-prefix=/
             - --stability.level=generally-available
+            - --disable-reporting
           env:
             - name: MONITORING_ENDPOINT
               value: "IP_SERVER_MONITORING:4317" # <--- UBAH INI dengan IP Server Anda
