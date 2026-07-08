@@ -33,12 +33,21 @@ This setup separates the Monitoring Server (running Docker Compose) from your Ap
 
 ### Phase 1: Start the Monitoring Server (Docker Compose)
 This server acts as the central storage and visualization hub.
-```bash
-docker compose up -d
-```
+
+1. **Configure Environment Variables**:
+   Copy the example environment file and adjust the credentials if necessary:
+   ```bash
+   cp .env.example .env
+   ```
+   
+2. **Start the Stack**:
+   ```bash
+   docker-compose up -d
+   ```
+
 Access endpoints:
-- Grafana: http://localhost:3000 (admin / admin)
-- MinIO: http://localhost:9001 (minioadmin / minioadmin123)
+- Grafana: http://localhost:3000 (admin / [Your GF_SECURITY_ADMIN_PASSWORD])
+- MinIO: http://localhost:9001 ([Your MINIO_ROOT_USER] / [Your MINIO_ROOT_PASSWORD])
 
 ### Phase 2: Sync Images for Offline Kubernetes
 Since your Kubernetes cluster is air-gapped, you must sync the required images to your private container registry (e.g., GHCR, Harbor, Docker Hub).

@@ -53,7 +53,10 @@ services:
     volumes:
       - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/tmp/loki
-    command: -config.file=/etc/loki/local-config.yaml -target=all
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: -config.file=/etc/loki/local-config.yaml -target=all -config.expand-env=true
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -64,7 +67,10 @@ services:
     image: ghcr.io/maliqpotter/tempo:2.10.5
     container_name: tempo
     restart: unless-stopped
-    command: "-target=all -config.file=/etc/tempo.yaml"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: "-target=all -config.file=/etc/tempo.yaml -config.expand-env=true"
     volumes:
       - ./config/tempo/tempo.yml:/etc/tempo.yaml:ro
       - tempo-data:/var/tempo
@@ -80,7 +86,10 @@ services:
     image: ghcr.io/maliqpotter/mimir:3.0.6
     container_name: mimir
     restart: unless-stopped
-    command: ["-config.file=/etc/mimir/config.yaml"]
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: ["-config.file=/etc/mimir/config.yaml", "-config.expand-env=true"]
     volumes:
       - ./config/mimir/mimir-config.yml:/etc/mimir/config.yaml:ro
       - mimir-data:/tmp/mimir
@@ -165,7 +174,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ./config/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
       - ./config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
-      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/dashboards:/etc/grafana/dashboards:ro
     depends_on:
       - loki
       - tempo
