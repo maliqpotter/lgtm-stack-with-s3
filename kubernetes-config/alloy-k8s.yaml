@@ -1,4 +1,14 @@
 ---
+# Source: alloy/templates/configmap-env.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-env
+  namespace: monitoring
+data:
+  CLUSTER_NAME: "kubernetes" # <--- UBAH INI sesuai nama cluster Anda
+  MONITORING_ENDPOINT: "192.171.171.26:4317" # <--- UBAH INI dengan IP Server Anda
+---
 # Source: alloy/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -424,11 +434,10 @@ spec:
             - --server.http.ui-path-prefix=/
             - --stability.level=generally-available
             - --disable-reporting
+          envFrom:
+            - configMapRef:
+                name: alloy-env
           env:
-            - name: CLUSTER_NAME
-              value: "ovh2-kubernetes" # <--- UBAH INI sesuai nama cluster Anda
-            - name: MONITORING_ENDPOINT
-              value: "192.171.171.26:4317" # <--- UBAH INI dengan IP Server Anda
             - name: ALLOY_DEPLOY_MODE
               value: "helm"
             - name: HOSTNAME

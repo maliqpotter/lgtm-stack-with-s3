@@ -1,0 +1,102 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// --- METRICS PIPELINE ---
+
+// Scrape local Node Exporter
+prometheus.scrape "node_exporter" {
+  targets = [
+    {"__address__" = "node-exporter:9100"},
+  ]
+  forward_to = [prometheus.relabel.add_host.receiver]
+  job_name   = "node-exporter"
+}
+
+// Scrape local cAdvisor
+prometheus.scrape "cadvisor" {
+  targets = [
+    {"__address__" = "cadvisor:8080"},
+  ]
+  forward_to = [prometheus.relabel.add_host.receiver]
+  job_name   = "cadvisor"
+}
+
+prometheus.relabel "add_host" {
+  forward_to = [otelcol.receiver.prometheus.default.receiver]
+  rule {
+    target_label = "host"
+    replacement  = coalesce(sys.env("HOSTNAME"), "docker-node")
+  }
+}
+
+// Convert Prometheus to OTLP
+otelcol.receiver.prometheus "default" {
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+  }
+}
+
+// --- LOGS PIPELINE ---
+
+discovery.docker "dockerlogs" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "dockerlogs" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex = "/(.*)"
+    target_label = "service"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.dockerlogs.targets
+  labels     = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.dockerlogs.rules
+  forward_to = [loki.process.add_label.receiver]
+}
+
+loki.process "add_label" {
+  forward_to = [otelcol.receiver.loki.default.receiver]
+  stage.static_labels {
+    values = {
+      host = coalesce(sys.env("HOSTNAME"), "docker-node"),
+    }
+  }
+}
+
+// Convert Logs to OTLP
+otelcol.receiver.loki "default" {
+  output {
+    logs = [otelcol.processor.batch.default.input]
+  }
+}
+
+// --- PROCESSOR & EXPORTER ---
+
+otelcol.processor.batch "default" {
+  timeout = "5s"
+  send_batch_size = 1000
+  
+  output {
+    metrics = [otelcol.exporter.otlp.monitoring_server.input]
+    logs    = [otelcol.exporter.otlp.monitoring_server.input]
+  }
+}
+
+otelcol.exporter.otlp "monitoring_server" {
+  client {
+    endpoint = coalesce(sys.env("MONITORING_ENDPOINT"), "192.168.1.100:4317")
+    tls { insecure = true }
+  }
+  sending_queue {
+    enabled    = true
+    queue_size = 10000
+  }
+}

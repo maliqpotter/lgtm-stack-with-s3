@@ -47,6 +47,26 @@ prometheus.remote_write "mimir" {
 }
 
 // ============================================================
+// Node Metrics Collection
+// ============================================================
+
+prometheus.scrape "node_exporter" {
+  targets = [
+    {"__address__" = "node-exporter:9100"},
+  ]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  job_name   = "node-exporter"
+}
+
+prometheus.scrape "cadvisor" {
+  targets = [
+    {"__address__" = "cadvisor:8080"},
+  ]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  job_name   = "cadvisor"
+}
+
+// ============================================================
 // Logs → Loki (via OTLP converted to Loki format)
 // ============================================================
 
