@@ -10,8 +10,9 @@ prometheus.scrape "node_exporter" {
   targets = [
     {"__address__" = "node-exporter:9100"},
   ]
-  forward_to = [prometheus.relabel.add_host.receiver]
+  forward_to = [prometheus.relabel.local_labels.receiver]
   job_name   = "node-exporter"
+  scrape_interval = "15s"
 }
 
 // Scrape local cAdvisor
@@ -19,29 +20,17 @@ prometheus.scrape "cadvisor" {
   targets = [
     {"__address__" = "cadvisor:8080"},
   ]
-  forward_to = [prometheus.relabel.cadvisor.receiver]
+  forward_to = [prometheus.relabel.local_labels.receiver]
   job_name   = "cadvisor"
+  scrape_interval = "15s"
 }
 
-prometheus.relabel "cadvisor" {
-  forward_to = [prometheus.relabel.add_host.receiver]
-
-  rule {
-    action = "labeldrop"
-    regex  = "container_label_.*"
-  }
-}
-
-prometheus.relabel "add_host" {
-  forward_to = [otelcol.receiver.prometheus.default.receiver]
-  rule {
-    target_label = "host"
-    replacement  = coalesce(sys.env("HOSTNAME"), "docker-node")
-  }
+prometheus.relabel "local_labels" {
   rule {
     target_label = "instance"
     replacement  = coalesce(sys.env("HOSTNAME"), "docker-node")
   }
+  forward_to = [otelcol.receiver.prometheus.default.receiver]
 }
 
 // Convert Prometheus to OTLP
