@@ -163,6 +163,17 @@ services:
     networks:
       - monitoring
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    volumes:
+      - ./config/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+#   ports:
+#     - "9115:9115"
+    networks:
+      - monitoring
+
   grafana:
     image: ghcr.io/maliqpotter/grafana-oss:13.0.1-security-01
     container_name: grafana

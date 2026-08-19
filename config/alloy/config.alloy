@@ -75,6 +75,38 @@ prometheus.relabel "cadvisor" {
   }
 }
 
+// ============================================================
+// Blackbox Exporter (SSL Expiry & Domain/DNS Probing)
+// ============================================================
+
+prometheus.scrape "blackbox_http" {
+  targets = [
+    {"__address__" = "https://google.com"},
+  ]
+  metrics_path = "/probe"
+  params = {
+    "module" = ["http_2xx"],
+  }
+  relabel_rules = prometheus.relabel.blackbox.rules
+  forward_to    = [prometheus.remote_write.mimir.receiver]
+  job_name      = "blackbox-ssl"
+}
+
+prometheus.relabel "blackbox" {
+  rule {
+    source_labels = ["__address__"]
+    target_label  = "__param_target"
+  }
+  rule {
+    source_labels = ["__param_target"]
+    target_label  = "instance"
+  }
+  rule {
+    target_label = "__address__"
+    replacement  = "blackbox-exporter:9115"
+  }
+}
+
 prometheus.relabel "add_host" {
   forward_to = [prometheus.remote_write.mimir.receiver]
   rule {
