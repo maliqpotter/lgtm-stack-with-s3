@@ -63,9 +63,17 @@ prometheus.scrape "cadvisor" {
   targets = [
     {"__address__" = "cadvisor:8080"},
   ]
-  forward_to = [prometheus.relabel.local_labels.receiver]
+  forward_to = [prometheus.relabel.cadvisor.receiver]
   job_name   = "cadvisor"
   scrape_interval = "15s"
+}
+
+prometheus.relabel "cadvisor" {
+  rule {
+    action = "labeldrop"
+    regex  = "container_label_.*"
+  }
+  forward_to = [prometheus.relabel.local_labels.receiver]
 }
 
 prometheus.relabel "local_labels" {
