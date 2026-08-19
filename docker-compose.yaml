@@ -108,10 +108,10 @@ services:
     privileged: true
     environment:
       - HOSTNAME=${HOSTNAME:-monitoring-server}
-    ports:
-      - "12345:12345"  # Alloy UI
-      - "4317:4317"   # OTLP gRPC (entry point for apps)
-      - "4318:4318"   # OTLP HTTP (entry point for apps)
+#    ports:
+#      - "12345:12345"  # Alloy UI (Hanya via Localhost / SSH Tunnel)
+#      - "4317:4317"             # OTLP gRPC
+#      - "4318:4318"             # OTLP HTTP
     volumes:
       - ./config/alloy/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
@@ -153,6 +153,7 @@ services:
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
