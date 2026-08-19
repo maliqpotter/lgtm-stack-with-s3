@@ -54,7 +54,7 @@ prometheus.scrape "node_exporter" {
   targets = [
     {"__address__" = "node-exporter:9100"},
   ]
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  forward_to = [prometheus.relabel.add_host.receiver]
   job_name   = "node-exporter"
 }
 
@@ -62,8 +62,16 @@ prometheus.scrape "cadvisor" {
   targets = [
     {"__address__" = "cadvisor:8080"},
   ]
-  forward_to = [prometheus.remote_write.mimir.receiver]
+  forward_to = [prometheus.relabel.add_host.receiver]
   job_name   = "cadvisor"
+}
+
+prometheus.relabel "add_host" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  rule {
+    target_label = "host"
+    replacement  = coalesce(sys.env("HOSTNAME"), "monitoring-server")
+  }
 }
 
 // ============================================================

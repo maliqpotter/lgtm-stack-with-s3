@@ -7,9 +7,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-    ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web Console
+#   ports:
+#     - "9000:9000"   # S3 API
+#     - "9001:9001"   # Web Console
     volumes:
       - minio-data:/data
     healthcheck:
@@ -48,8 +48,8 @@ services:
     container_name: loki
     restart: unless-stopped
     user: root
-    ports:
-      - "3100:3100"
+#   ports:
+#     - "3100:3100"
     volumes:
       - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/tmp/loki
@@ -74,8 +74,8 @@ services:
     volumes:
       - ./config/tempo/tempo.yml:/etc/tempo.yaml:ro
       - tempo-data:/var/tempo
-    ports:
-      - "3200:3200"   # HTTP API
+#   ports:
+#     - "3200:3200"   # HTTP API
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -93,8 +93,8 @@ services:
     volumes:
       - ./config/mimir/mimir-config.yml:/etc/mimir/config.yaml:ro
       - mimir-data:/tmp/mimir
-    ports:
-      - "9009:9009"
+#   ports:
+#     - "9009:9009"
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -106,6 +106,8 @@ services:
     container_name: alloy
     restart: unless-stopped
     privileged: true
+    environment:
+      - HOSTNAME=${HOSTNAME:-monitoring-server}
     ports:
       - "12345:12345"  # Alloy UI
       - "4317:4317"   # OTLP gRPC (entry point for apps)
@@ -138,13 +140,13 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "9100:9100"
+#   ports:
+#     - "9100:9100"
     networks:
       - monitoring
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    image: ghcr.io/google/cadvisor:0.57.0
     container_name: cadvisor
     restart: unless-stopped
     privileged: true
@@ -154,8 +156,9 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-    ports:
-      - "8080:8080"
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+#   ports:
+#     - "8080:8080"
     networks:
       - monitoring
 
