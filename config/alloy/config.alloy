@@ -62,14 +62,27 @@ prometheus.scrape "cadvisor" {
   targets = [
     {"__address__" = "cadvisor:8080"},
   ]
-  forward_to = [prometheus.relabel.add_host.receiver]
+  forward_to = [prometheus.relabel.cadvisor.receiver]
   job_name   = "cadvisor"
+}
+
+prometheus.relabel "cadvisor" {
+  forward_to = [prometheus.relabel.add_host.receiver]
+
+  rule {
+    action = "labeldrop"
+    regex  = "container_label_.*"
+  }
 }
 
 prometheus.relabel "add_host" {
   forward_to = [prometheus.remote_write.mimir.receiver]
   rule {
     target_label = "host"
+    replacement  = coalesce(sys.env("HOSTNAME"), "monitoring-server")
+  }
+  rule {
+    target_label = "instance"
     replacement  = coalesce(sys.env("HOSTNAME"), "monitoring-server")
   }
 }
