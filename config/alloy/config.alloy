@@ -77,12 +77,15 @@ prometheus.relabel "local_labels" {
 }
 
 // ============================================================
-// Blackbox Exporter (SSL Expiry & Domain/DNS Probing)
+// Blackbox Exporter (SSL Expiry, Website & DNS Probing)
 // ============================================================
 
+// 1. Probing Website HTTPS & SSL Expiry (Tambahkan URL domain Anda di sini)
 prometheus.scrape "blackbox_http" {
   targets = [
     {"__address__" = "https://google.com"},
+    // {"__address__" = "https://domain-anda.com"},
+    // {"__address__" = "https://subdomain.domain-anda.com"},
   ]
   metrics_path = "/probe"
   params = {
@@ -91,6 +94,21 @@ prometheus.scrape "blackbox_http" {
   relabel_rules = prometheus.relabel.blackbox.rules
   forward_to    = [prometheus.remote_write.mimir.receiver]
   job_name      = "blackbox-ssl"
+}
+
+// 2. Probing DNS Resolution (Tambahkan IP Server DNS di sini, misal DNS Server internal / 8.8.8.8)
+prometheus.scrape "blackbox_dns" {
+  targets = [
+    {"__address__" = "8.8.8.8:53"},
+    // {"__address__" = "1.1.1.1:53"},
+  ]
+  metrics_path = "/probe"
+  params = {
+    "module" = ["dns_udp"],
+  }
+  relabel_rules = prometheus.relabel.blackbox.rules
+  forward_to    = [prometheus.remote_write.mimir.receiver]
+  job_name      = "blackbox-dns"
 }
 
 prometheus.relabel "blackbox" {
