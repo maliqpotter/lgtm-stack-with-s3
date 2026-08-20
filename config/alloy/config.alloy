@@ -113,7 +113,7 @@ prometheus.scrape "blackbox_http" {
   params = {
     "module" = ["http_2xx"],
   }
-  // Langsung ke mimir agar label 'instance' tidak tertimpa nama server ('pycon-server')
+  // Langsung ke mimir agar label 'instance' tidak tertimpa
   forward_to   = [prometheus.remote_write.mimir.receiver]
   job_name     = "blackbox-ssl"
 }
