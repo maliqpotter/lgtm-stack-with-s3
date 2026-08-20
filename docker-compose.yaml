@@ -35,9 +35,9 @@ services:
       mc mb --ignore-existing local/loki-data;
       mc mb --ignore-existing local/tempo-data;
       mc mb --ignore-existing local/mimir-data;
-      mc ilm add --expiry-days 3 local/loki-data;
-      mc ilm add --expiry-days 3 local/tempo-data;
-      mc ilm add --expiry-days 3 local/mimir-data;
+      mc ilm add --expiry-days 45 local/loki-data;
+      mc ilm add --expiry-days 45 local/tempo-data;
+      mc ilm add --expiry-days 45 local/mimir-data;
       echo 'Buckets created and lifecycle policies applied successfully';
       "
     networks:

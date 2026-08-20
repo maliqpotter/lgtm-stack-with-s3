@@ -89,37 +89,10 @@ prometheus.relabel "local_labels" {
 // ============================================================
 
 // 1. Probing Website HTTPS & SSL Expiry (Tambahkan URL domain Anda di sini)
-prometheus.scrape "blackbox_http" {
+discovery.relabel "blackbox_http_targets" {
   targets = [
     {"__address__" = "https://google.com"},
-    // {"__address__" = "https://domain-anda.com"},
-    // {"__address__" = "https://subdomain.domain-anda.com"},
   ]
-  metrics_path = "/probe"
-  params = {
-    "module" = ["http_2xx"],
-  }
-  relabel_rules = prometheus.relabel.blackbox.rules
-  forward_to    = [prometheus.remote_write.mimir.receiver]
-  job_name      = "blackbox-ssl"
-}
-
-// 2. Probing DNS Resolution (Tambahkan IP Server DNS di sini, misal DNS Server internal / 8.8.8.8)
-prometheus.scrape "blackbox_dns" {
-  targets = [
-    {"__address__" = "8.8.8.8:53"},
-    // {"__address__" = "1.1.1.1:53"},
-  ]
-  metrics_path = "/probe"
-  params = {
-    "module" = ["dns_udp"],
-  }
-  relabel_rules = prometheus.relabel.blackbox.rules
-  forward_to    = [prometheus.remote_write.mimir.receiver]
-  job_name      = "blackbox-dns"
-}
-
-prometheus.relabel "blackbox" {
   rule {
     source_labels = ["__address__"]
     target_label  = "__param_target"
@@ -132,6 +105,45 @@ prometheus.relabel "blackbox" {
     target_label = "__address__"
     replacement  = "blackbox-exporter:9115"
   }
+}
+
+prometheus.scrape "blackbox_http" {
+  targets      = discovery.relabel.blackbox_http_targets.output
+  metrics_path = "/probe"
+  params = {
+    "module" = ["http_2xx"],
+  }
+  forward_to   = [prometheus.relabel.local_labels.receiver]
+  job_name     = "blackbox-ssl"
+}
+
+// 2. Probing DNS Resolution (Tambahkan IP Server DNS di sini, misal DNS Server internal / 8.8.8.8)
+discovery.relabel "blackbox_dns_targets" {
+  targets = [
+    {"__address__" = "8.8.8.8:53"},
+  ]
+  rule {
+    source_labels = ["__address__"]
+    target_label  = "__param_target"
+  }
+  rule {
+    source_labels = ["__param_target"]
+    target_label  = "instance"
+  }
+  rule {
+    target_label = "__address__"
+    replacement  = "blackbox-exporter:9115"
+  }
+}
+
+prometheus.scrape "blackbox_dns" {
+  targets      = discovery.relabel.blackbox_dns_targets.output
+  metrics_path = "/probe"
+  params = {
+    "module" = ["dns_udp"],
+  }
+  forward_to   = [prometheus.relabel.local_labels.receiver]
+  job_name     = "blackbox-dns"
 }
 
 // ============================================================
