@@ -113,7 +113,8 @@ prometheus.scrape "blackbox_http" {
   params = {
     "module" = ["http_2xx"],
   }
-  forward_to   = [prometheus.relabel.local_labels.receiver]
+  // Langsung ke mimir agar label 'instance' tidak tertimpa nama server ('pycon-server')
+  forward_to   = [prometheus.remote_write.mimir.receiver]
   job_name     = "blackbox-ssl"
 }
 
@@ -121,6 +122,7 @@ prometheus.scrape "blackbox_http" {
 discovery.relabel "blackbox_dns_targets" {
   targets = [
     {"__address__" = "8.8.8.8:53"},
+    // {"__address__" = "1.1.1.1:53"}, // <-- Cara menambahkan DNS lain
   ]
   rule {
     source_labels = ["__address__"]
@@ -142,8 +144,37 @@ prometheus.scrape "blackbox_dns" {
   params = {
     "module" = ["dns_udp"],
   }
-  forward_to   = [prometheus.relabel.local_labels.receiver]
+  // Langsung ke mimir agar label 'instance' tidak tertimpa nama server
+  forward_to   = [prometheus.remote_write.mimir.receiver]
   job_name     = "blackbox-dns"
+}
+
+// ============================================================
+// Kubernetes Scraping (Untuk Dashboard dotdc/grafana-dashboards-kubernetes)
+// Pastikan endpoints disesuaikan dengan cluster Anda.
+// ============================================================
+
+prometheus.scrape "kubernetes_apiservers" {
+  targets = [
+    // Ganti dengan IP/Endpoint Kubernetes API Server Anda
+    // {"__address__" = "10.43.0.1:443"},
+  ]
+  scheme = "https"
+  // Jika menggunakan otentikasi (misal token), konfigurasi bearer_token di sini.
+  tls_config {
+    insecure_skip_verify = true
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  job_name   = "apiserver"
+}
+
+prometheus.scrape "kubernetes_coredns" {
+  targets = [
+    // Ganti dengan IP/Endpoint pod CoreDNS (port 9153)
+    // {"__address__" = "10.43.0.10:9153"},
+  ]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  job_name   = "coredns"
 }
 
 // ============================================================
