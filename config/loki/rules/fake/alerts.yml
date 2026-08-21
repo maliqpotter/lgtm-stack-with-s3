@@ -1,0 +1,12 @@
+groups:
+  - name: loki-example-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate({app="frontend"} |= "error" [5m])) by (job) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected for {{ $labels.job }}"
+          description: "There are more than 10 errors per second on job {{ $labels.job }}"

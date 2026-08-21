@@ -52,6 +52,7 @@ services:
 #     - "3100:3100"
     volumes:
       - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - ./config/loki/rules:/etc/loki/rules:ro
       - loki-data:/tmp/loki
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}

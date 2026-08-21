@@ -52,3 +52,15 @@ compactor:
   retention_delete_delay: 2h
   retention_delete_worker_count: 150
   delete_request_store: s3
+
+ruler:
+  alertmanager_url: http://alertmanager:9093
+  storage:
+    type: local
+    local:
+      directory: /etc/loki/rules
+  rule_path: /tmp/loki/rules-temp
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
