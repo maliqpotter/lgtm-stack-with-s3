@@ -22,7 +22,7 @@ groups:
       - alert: HighHTTP5xxRate
         expr: |
           sum(rate({service=~".+"} |~ "(?i)(status[=: ]+5[0-9]{2}|\"5[0-9]{2}\"|HTTP/[12].[01]\" 5[0-9]{2}| 5[0-9]{2} )" [5m])) by (service) > 1
-        for: 1m
+        for: 10m
         labels:
           severity: critical
         annotations:
@@ -30,3 +30,18 @@ groups:
           description: "Service {{ $labels.service }} menghasilkan lebih dari 1 log error 5xx per detik selama 10 menit terakhir. Saat ini {{ $value | printf \"%.1f\" }}/s. Segera investigasi!"
           error_type: "5xx Server Error"
           error_rate: "{{ $value | printf \"%.1f\" }}"
+
+  # ==========================================
+  # INSTANT LOG ALERTS
+  # ==========================================
+  - name: instant-log-alerts
+    interval: 1m
+    rules:
+      - alert: InstantErrorDetected
+        expr: count_over_time({service=~".+"} |~ "(?i)(error|exception|panic)" [1m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Error detected in {{ $labels.service }}"
+          description: "🚨 [Instan] Terdeteksi log Error (error/exception/panic) di service `{{ $labels.service }}` dalam 1 menit terakhir! Segera cek Grafana Loki!"
