@@ -39,15 +39,91 @@ This server acts as the central storage and visualization hub.
    ```bash
    cp .env.example .env
    ```
-   
-2. **Start the Stack**:
+
+2. **Setup Network**:
+   Jalankan script setup untuk membuat Docker network dengan static IP sebelum menjalankan compose:
    ```bash
-   docker-compose up -d
+   bash setup.sh
+   ```
+
+3. **Start the Stack**:
+   ```bash
+   docker compose up -d
    ```
 
 Access endpoints:
-- Grafana: http://localhost:3000 (admin / [Your GF_SECURITY_ADMIN_PASSWORD])
-- MinIO: http://localhost:9001 ([Your MINIO_ROOT_USER] / [Your MINIO_ROOT_PASSWORD])
+- Grafana: http://\<IP_SERVER\>:3000 (admin / [Your GF_SECURITY_ADMIN_PASSWORD])
+
+## Network Architecture
+
+Semua container menggunakan static IP pada subnet `177.20.0.0/28` untuk keamanan dan kemudahan akses antar service di server yang sama.
+
+| Container | IP Address | Port |
+|---|---|---|
+| Gateway | `177.20.0.1` | — |
+| MinIO | `177.20.0.2` | `9000` (S3 API), `9001` (Console) |
+| Loki | `177.20.0.3` | `3100` |
+| Tempo | `177.20.0.4` | `3200` (HTTP), `4317` (OTLP gRPC) |
+| Mimir | `177.20.0.5` | `9009` |
+| Alertmanager | `177.20.0.6` | `9093` |
+| Alloy | `177.20.0.7` | `12345` (UI), `4317` (OTLP gRPC), `4318` (OTLP HTTP) |
+| Node Exporter | `177.20.0.8` | `9100` |
+| cAdvisor | `177.20.0.9` | `8080` |
+| Blackbox Exporter | `177.20.0.10` | `9115` |
+| Grafana | `177.20.0.11` | `3000` |
+
+> **Note**: Hanya port Grafana (`3000`) yang di-expose ke publik. Service lain hanya bisa diakses via IP internal dari server yang sama.
+
+### Menghubungkan Aplikasi di Server yang Sama
+
+Jika aplikasi Anda berjalan di Docker pada server yang sama, tambahkan network `monitoring` ke compose aplikasi Anda:
+
+```yaml
+services:
+  my-app:
+    image: my-app:latest
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://177.20.0.7:4317
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+```
+
+Jika aplikasi berjalan langsung di host (non-Docker), cukup arahkan ke `177.20.0.7:4317`.
+
+## HTTPS (Self-Signed Certificate)
+
+Grafana mendukung HTTPS menggunakan self-signed certificate. Secara default fitur ini **dinonaktifkan**.
+
+### Cara Mengaktifkan
+
+1. **Generate certificate**:
+   ```bash
+   bash config/grafana/generate-cert.sh <IP_SERVER>
+   # Contoh: bash config/grafana/generate-cert.sh 192.168.1.100
+   ```
+
+2. **Uncomment konfigurasi HTTPS** di `docker-compose.yaml` pada bagian service `grafana`:
+   ```yaml
+   environment:
+     - GF_SERVER_PROTOCOL=https
+     - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
+     - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key
+   volumes:
+     - ./config/grafana/certs:/etc/grafana/certs:ro
+   ```
+
+3. **Restart Grafana**:
+   ```bash
+   docker compose restart grafana
+   ```
+
+4. Akses via `https://<IP_SERVER>:3000` (browser akan menampilkan warning self-signed, klik "Proceed").
+
+> **Note**: File certificate (`config/grafana/certs/`) sudah masuk `.gitignore` dan tidak akan ter-push ke repository.
 
 ### Phase 2: Sync Images for Offline Kubernetes
 Since your Kubernetes cluster is air-gapped, you must sync the required images to your private container registry (e.g., GHCR, Harbor, Docker Hub).
@@ -106,3 +182,4 @@ Untuk mempermudah monitoring, berikut adalah list Grafana Dashboards yang direko
 - **Docker cAdvisor**: [cAdvisor Exporter Docker Containers Overview (ID: 21743)](https://grafana.com/grafana/dashboards/21743-cadvisor-exporter-docker-containers-overview/)
 - **Node Exporter**: [Node Exporter Dashboard (ID: 24784)](https://grafana.com/grafana/dashboards/24784-node-exporter-dashboard-20240520/)
 - **Kubernetes Dashboard**: [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes)
+
