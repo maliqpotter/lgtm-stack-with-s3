@@ -125,10 +125,14 @@ services:
     privileged: true
     environment:
       - HOSTNAME=${HOSTNAME:-monitoring-server}
-    # Port OTLP tetap di-expose untuk menerima data dari Kubernetes / server lain
-    ports:
-      - "4317:4317"   # OTLP gRPC (untuk K8s → Alloy)
-      - "4318:4318"   # OTLP HTTP
+    # Port OTLP tidak di-expose ke publik.
+    # Aplikasi di server yang sama bisa konek via:
+    #   - Host/Docker lain: 177.20.0.7:4317 (gRPC) / 177.20.0.7:4318 (HTTP)
+    #   - Docker di network monitoring: alloy:4317 / alloy:4318
+    # Uncomment jika perlu menerima data dari server LAIN (misal K8s di server terpisah):
+    # ports:
+    #   - "4317:4317"   # OTLP gRPC
+    #   - "4318:4318"   # OTLP HTTP
     volumes:
       - ./config/alloy/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
