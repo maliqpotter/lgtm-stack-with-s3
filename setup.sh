@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # Setup Script — LGTM Monitoring Stack
-# Jalankan script ini SEBELUM docker compose up -d
+# Run this script BEFORE docker compose up -d
 # ============================================================
 
 set -e
@@ -14,20 +14,20 @@ echo "🔧 LGTM Monitoring Stack — Setup"
 echo "================================="
 echo ""
 
-# 1. Buat Docker Network (jika belum ada)
+# 1. Create Docker Network (if not exists)
 if docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
-  echo "⚠️  Network '$NETWORK_NAME' sudah ada."
+  echo "⚠️  Network '$NETWORK_NAME' already exists."
 
-  # Cek apakah subnet-nya sudah sesuai
+  # Check if subnet matches
   EXISTING_SUBNET=$(docker network inspect "$NETWORK_NAME" --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
   if [ "$EXISTING_SUBNET" != "$SUBNET" ]; then
-    echo "❌ Subnet tidak sesuai! (sekarang: $EXISTING_SUBNET, dibutuhkan: $SUBNET)"
-    echo "   Menghapus network lama dan membuat ulang..."
+    echo "❌ Subnet mismatch! (current: $EXISTING_SUBNET, required: $SUBNET)"
+    echo "   Removing old network and recreating..."
 
-    # Hentikan semua container yang masih terhubung
+    # Stop all connected containers
     CONTAINERS=$(docker network inspect "$NETWORK_NAME" --format '{{range .Containers}}{{.Name}} {{end}}')
     if [ -n "$CONTAINERS" ]; then
-      echo "   Menghentikan container: $CONTAINERS"
+      echo "   Stopping containers: $CONTAINERS"
       docker compose down 2>/dev/null || true
     fi
 
@@ -37,9 +37,9 @@ if docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
       --subnet "$SUBNET" \
       --gateway "$GATEWAY" \
       "$NETWORK_NAME"
-    echo "✅ Network '$NETWORK_NAME' berhasil dibuat ulang dengan subnet $SUBNET"
+    echo "✅ Network '$NETWORK_NAME' recreated with subnet $SUBNET"
   else
-    echo "✅ Subnet sudah sesuai ($SUBNET). Tidak perlu perubahan."
+    echo "✅ Subnet already matches ($SUBNET). No changes needed."
   fi
 else
   docker network create \
@@ -47,7 +47,7 @@ else
     --subnet "$SUBNET" \
     --gateway "$GATEWAY" \
     "$NETWORK_NAME"
-  echo "✅ Network '$NETWORK_NAME' berhasil dibuat dengan subnet $SUBNET"
+  echo "✅ Network '$NETWORK_NAME' created with subnet $SUBNET"
 fi
 
 echo ""
@@ -68,4 +68,4 @@ echo "   │ Blackbox Exporter   │ 177.20.0.10      │"
 echo "   │ Grafana             │ 177.20.0.11      │"
 echo "   └─────────────────────┴──────────────────┘"
 echo ""
-echo "🚀 Network siap! Jalankan: docker compose up -d"
+echo "🚀 Network ready! Run: docker compose up -d"

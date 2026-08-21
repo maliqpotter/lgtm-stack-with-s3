@@ -48,12 +48,12 @@ data:
 
     // --- METRICS PIPELINE ---
     
-    // 1. Discovery: Cari service kube-state-metrics
+    // 1. Discovery: Find kube-state-metrics service
     discovery.kubernetes "services" {
       role = "service"
     }
 
-    // 1b. Discovery: Cari seluruh endpoints dari service (untuk DaemonSet)
+    // 1b. Discovery: Find all endpoints from services (for DaemonSet)
     discovery.kubernetes "endpoints" {
       role = "endpoints"
     }
@@ -67,18 +67,18 @@ data:
       }
     }
 
-    // 2. Scrape: Ambil data metrics dari kube-state-metrics
+    // 2. Scrape: Collect metrics from kube-state-metrics
     prometheus.scrape "kube_state_metrics" {
       clustering { enabled = true }
       targets    = discovery.relabel.kube_state_metrics.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "kube-state-metrics"
-      // Memastikan cadvisor/volume metrics bisa dicari juga di prometheus.
+      // Ensures cadvisor/volume metrics are also searchable in prometheus.
     }
 
     // --- NODE EXPORTER PIPELINE ---
 
-    // 3. Discovery: Cari service node-exporter
+    // 3. Discovery: Find node-exporter service
     discovery.relabel "node_exporter" {
       targets = discovery.kubernetes.endpoints.targets
       rule {
@@ -86,7 +86,7 @@ data:
         regex         = "node-exporter"
         action        = "keep"
       }
-      // Mapping nama node ke label 'node'
+      // Map node name to 'node' label
       rule {
         source_labels = ["__meta_kubernetes_endpoint_node_name"]
         target_label  = "node"
@@ -102,7 +102,7 @@ data:
     }
 
     // --- KUBELET & CADVISOR PIPELINE ---
-    // Diperlukan untuk metric spesifik dari setiap pod/container (seperti CPU/RAM per Pod)
+    // Required for per-pod/container specific metrics (e.g. CPU/RAM per Pod)
 
     discovery.kubernetes "nodes" {
       role = "node"
@@ -226,7 +226,7 @@ data:
 
     // --- BRIDGE ---
 
-    // 5. Bridge: Convert Prometheus metrics ke OTLP agar bisa dikirim lewat tunnel
+    // 5. Bridge: Convert Prometheus metrics to OTLP so they can be sent over the tunnel
     otelcol.receiver.prometheus "default" {
       output {
         metrics = [otelcol.processor.batch.default.input]
@@ -239,7 +239,7 @@ data:
       role = "pod"
     }
 
-    // Filter: Hanya ambil log dari namespace development dan monitoring
+    // Filter: Only collect logs from development and monitoring namespaces
     discovery.relabel "logs_filter" {
       targets = discovery.kubernetes.pods.targets
       rule {

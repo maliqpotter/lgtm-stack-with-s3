@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: test-app
-          # Pastikan Anda sudah membuild dan push image ini ke registry Anda terlebih dahulu
-          # Contoh: docker build -t ghcr.io/your-username/test-api:latest .
+          # Make sure you have built and pushed this image to your registry first
+          # Example: docker build -t ghcr.io/your-username/test-api:latest .
           image: ghcr.io/your-username/test-api:latest
           imagePullPolicy: IfNotPresent
           ports:
@@ -26,7 +26,7 @@ spec:
           env:
             - name: OTEL_SERVICE_NAME
               value: "test-api"
-            # Karena K8s Anda ada di tempat terpisah, Anda bisa menembak OTLP langsung ke Server Monitoring
+            # Since your K8s is on a separate server, you can send OTLP directly to the Monitoring Server
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://<IP_SERVER_MONITORING>:4318" 
 ---

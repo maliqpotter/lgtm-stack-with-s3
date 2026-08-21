@@ -13,7 +13,7 @@ groups:
           severity: critical
         annotations:
           summary: "Endpoint {{ $labels.instance }} is DOWN"
-          description: "Endpoint {{ $labels.instance }} telah gagal merespons selama lebih dari 15 menit (3 pengecekan berturut-turut)."
+          description: "Endpoint {{ $labels.instance }} has failed to respond for more than 15 minutes (3 consecutive checks)."
           site_name: "{{ $labels.instance }}"
 
       # Domain / SSL Certificate Expiring Soon (< 30 days)
@@ -25,7 +25,7 @@ groups:
           domain: "{{ $labels.instance }}"
         annotations:
           summary: "SSL certificate for {{ $labels.instance }} expires soon"
-          description: "SSL certificate untuk {{ $labels.instance }} akan expired dalam {{ $value | printf \"%.0f\" }} hari."
+          description: "SSL certificate for {{ $labels.instance }} will expire in {{ $value | printf \"%.0f\" }} days."
           days_left: "{{ $value | printf \"%.0f\" }}"
 
   # ==========================================
@@ -42,7 +42,7 @@ groups:
           severity: warning
         annotations:
           summary: "High memory usage on {{ $labels.instance }}"
-          description: "Penggunaan memori pada {{ $labels.instance }} melebihi 85% selama lebih dari 10 menit. Saat ini {{ $value | printf \"%.1f\" }}%."
+          description: "Memory usage on {{ $labels.instance }} has exceeded 85% for more than 10 minutes. Currently {{ $value | printf \"%.1f\" }}%."
           used_memory_percent: "{{ $value | printf \"%.1f\" }}"
           node_name: "{{ $labels.instance }}"
 
@@ -54,7 +54,7 @@ groups:
           severity: warning
         annotations:
           summary: "High CPU usage on {{ $labels.instance }}"
-          description: "Penggunaan CPU pada {{ $labels.instance }} melebihi 85% selama lebih dari 10 menit. Saat ini {{ $value | printf \"%.1f\" }}%."
+          description: "CPU usage on {{ $labels.instance }} has exceeded 85% for more than 10 minutes. Currently {{ $value | printf \"%.1f\" }}%."
           used_cpu_percent: "{{ $value | printf \"%.1f\" }}"
           node_name: "{{ $labels.instance }}"
 
@@ -66,6 +66,6 @@ groups:
           severity: warning
         annotations:
           summary: "Disk space low on {{ $labels.instance }} ({{ $labels.mountpoint }})"
-          description: "Penggunaan disk pada {{ $labels.instance }} mount {{ $labels.mountpoint }} melebihi 85% selama lebih dari 10 menit. Saat ini {{ $value | printf \"%.1f\" }}%."
+          description: "Disk usage on {{ $labels.instance }} mount {{ $labels.mountpoint }} has exceeded 85% for more than 10 minutes. Currently {{ $value | printf \"%.1f\" }}%."
           used_disk_percent: "{{ $value | printf \"%.1f\" }}"
           node_name: "{{ $labels.instance }}"

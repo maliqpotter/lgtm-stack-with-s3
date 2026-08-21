@@ -19,10 +19,10 @@ This setup separates the Monitoring Server (running Docker Compose) from your Ap
 [ KUBERNETES CLUSTER (Offline) ]                    [ MONITORING SERVER (Docker Compose) ]
                                                             
 +------------------+                                        +--------------------------------+
-| - CPU/RAM Node   |  Di-scrape   +---------------+         |        +--> Mimir (Metrics)    |
-| - Kube Metrics   | -----------> | Grafana Alloy |  Push   | +-------+                      |
+| - CPU/RAM Node   |  Scraped    +---------------+         |        +--> Mimir (Metrics)    |
+| - Kube Metrics   | ----------> | Grafana Alloy |  Push   | +-------+                      |
 | - Pod Logs       |              | (DaemonSet)   | ------> | | Alloy |-> Loki  (Logs)       |
-| - App Traces     | -----------> +---------------+  OTLP   | +-------+                      |
+| - App Traces     | ----------> +---------------+  OTLP   | +-------+                      |
 +------------------+                                        |        +--> Tempo (Traces)     |
                                                             |           ⬇️                   |
                                                             |        Grafana (Dashboard)     |
@@ -41,7 +41,7 @@ This server acts as the central storage and visualization hub.
    ```
 
 2. **Setup Network**:
-   Jalankan script setup untuk membuat Docker network dengan static IP sebelum menjalankan compose:
+   Run the setup script to create the Docker network with static IPs before starting compose:
    ```bash
    bash setup.sh
    ```
@@ -56,7 +56,7 @@ Access endpoints:
 
 ## Network Architecture
 
-Semua container menggunakan static IP pada subnet `177.20.0.0/28` untuk keamanan dan kemudahan akses antar service di server yang sama.
+All containers use static IPs on the `177.20.0.0/28` subnet for security and easy access between services on the same server.
 
 | Container | IP Address | Port |
 |---|---|---|
@@ -72,11 +72,11 @@ Semua container menggunakan static IP pada subnet `177.20.0.0/28` untuk keamanan
 | Blackbox Exporter | `177.20.0.10` | `9115` |
 | Grafana | `177.20.0.11` | `3000` |
 
-> **Note**: Hanya port Grafana (`3000`) yang di-expose ke publik. Service lain hanya bisa diakses via IP internal dari server yang sama.
+> **Note**: Only the Grafana port (`3000`) is exposed publicly. All other services are only accessible via their internal IP from the same server.
 
-### Menghubungkan Aplikasi di Server yang Sama
+### Connecting Applications on the Same Server
 
-Jika aplikasi Anda berjalan di Docker pada server yang sama, tambahkan network `monitoring` ke compose aplikasi Anda:
+If your application runs in Docker on the same server, add the `monitoring` network to your application's compose file:
 
 ```yaml
 services:
@@ -92,21 +92,21 @@ networks:
     external: true
 ```
 
-Jika aplikasi berjalan langsung di host (non-Docker), cukup arahkan ke `177.20.0.7:4317`.
+If your application runs directly on the host (non-Docker), simply point it to `177.20.0.7:4317`.
 
 ## HTTPS (Self-Signed Certificate)
 
-Grafana mendukung HTTPS menggunakan self-signed certificate. Secara default fitur ini **dinonaktifkan**.
+Grafana supports HTTPS using a self-signed certificate. This feature is **disabled** by default.
 
-### Cara Mengaktifkan
+### How to Enable
 
 1. **Generate certificate**:
    ```bash
    bash config/grafana/generate-cert.sh <IP_SERVER>
-   # Contoh: bash config/grafana/generate-cert.sh 192.168.1.100
+   # Example: bash config/grafana/generate-cert.sh 192.168.1.100
    ```
 
-2. **Uncomment konfigurasi HTTPS** di `docker-compose.yaml` pada bagian service `grafana`:
+2. **Uncomment the HTTPS configuration** in `docker-compose.yaml` under the `grafana` service:
    ```yaml
    environment:
      - GF_SERVER_PROTOCOL=https
@@ -121,9 +121,9 @@ Grafana mendukung HTTPS menggunakan self-signed certificate. Secara default fitu
    docker compose restart grafana
    ```
 
-4. Akses via `https://<IP_SERVER>:3000` (browser akan menampilkan warning self-signed, klik "Proceed").
+4. Access via `https://<IP_SERVER>:3000` (your browser will show a self-signed warning, click "Proceed").
 
-> **Note**: File certificate (`config/grafana/certs/`) sudah masuk `.gitignore` dan tidak akan ter-push ke repository.
+> **Note**: Certificate files (`config/grafana/certs/`) are listed in `.gitignore` and will not be pushed to the repository.
 
 ### Phase 2: Sync Images for Offline Kubernetes
 Since your Kubernetes cluster is air-gapped, you must sync the required images to your private container registry (e.g., GHCR, Harbor, Docker Hub).
@@ -176,10 +176,9 @@ kubectl apply -f test-app-k8s.yaml
 
 ## Recommended Grafana Dashboards
 
-Untuk mempermudah monitoring, berikut adalah list Grafana Dashboards yang direkomendasikan dan kompatibel dengan setup ini:
+Here are the recommended Grafana Dashboards that are compatible with this setup:
 
 - **Domain Monitoring**: [Symphony Domain (ID: 23131)](https://grafana.com/grafana/dashboards/23131-symphony-domain/)
 - **Docker cAdvisor**: [cAdvisor Exporter Docker Containers Overview (ID: 21743)](https://grafana.com/grafana/dashboards/21743-cadvisor-exporter-docker-containers-overview/)
 - **Node Exporter**: [Node Exporter Dashboard (ID: 24784)](https://grafana.com/grafana/dashboards/24784-node-exporter-dashboard-20240520/)
 - **Kubernetes Dashboard**: [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes)
-

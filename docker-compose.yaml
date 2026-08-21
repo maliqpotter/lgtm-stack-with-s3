@@ -125,11 +125,11 @@ services:
     privileged: true
     environment:
       - HOSTNAME=${HOSTNAME:-monitoring-server}
-    # Port OTLP tidak di-expose ke publik.
-    # Aplikasi di server yang sama bisa konek via:
-    #   - Host/Docker lain: 177.20.0.7:4317 (gRPC) / 177.20.0.7:4318 (HTTP)
-    #   - Docker di network monitoring: alloy:4317 / alloy:4318
-    # Uncomment jika perlu menerima data dari server LAIN (misal K8s di server terpisah):
+    # OTLP ports are NOT exposed publicly.
+    # Applications on the same server can connect via:
+    #   - Host/other Docker: 177.20.0.7:4317 (gRPC) / 177.20.0.7:4318 (HTTP)
+    #   - Docker on monitoring network: alloy:4317 / alloy:4318
+    # Uncomment if you need to receive data from a SEPARATE server (e.g. K8s on another host):
     # ports:
     #   - "4317:4317"   # OTLP gRPC
     #   - "4318:4318"   # OTLP HTTP
@@ -200,14 +200,14 @@ services:
     image: ghcr.io/maliqpotter/grafana-oss:13.0.1-security-01
     container_name: grafana
     restart: unless-stopped
-    # Port Grafana tetap di-expose untuk akses browser dari luar server
+    # Grafana port is exposed for browser access from outside the server
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       # --- HTTPS Mode (uncomment to enable) ---
-      # Jalankan dulu: bash config/grafana/generate-cert.sh <IP_SERVER>
+      # First run: bash config/grafana/generate-cert.sh <IP_SERVER>
       # - GF_SERVER_PROTOCOL=https
       # - GF_SERVER_CERT_FILE=/etc/grafana/certs/grafana.crt
       # - GF_SERVER_CERT_KEY=/etc/grafana/certs/grafana.key

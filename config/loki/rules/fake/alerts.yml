@@ -14,7 +14,7 @@ groups:
           severity: warning
         annotations:
           summary: "High HTTP {{ $labels.http_status }} error rate on {{ $labels.service }}"
-          description: "Aplikasi {{ $labels.service }} menghasilkan lebih dari 5 log error HTTP {{ $labels.http_status }} per detik selama 10 menit terakhir. Saat ini {{ $value | printf \"%.1f\" }}/s."
+          description: "Application {{ $labels.service }} is producing more than 5 HTTP {{ $labels.http_status }} error logs per second over the last 10 minutes. Currently {{ $value | printf \"%.1f\" }}/s."
           error_type: "HTTP {{ $labels.http_status }} Client Error"
           error_rate: "{{ $value | printf \"%.1f\" }}"
 
@@ -27,7 +27,7 @@ groups:
           severity: critical
         annotations:
           summary: "High HTTP {{ $labels.http_status }} error rate on {{ $labels.service }}"
-          description: "Aplikasi {{ $labels.service }} menghasilkan lebih dari 1 log error HTTP {{ $labels.http_status }} per detik selama 10 menit terakhir. Saat ini {{ $value | printf \"%.1f\" }}/s. Segera investigasi!"
+          description: "Application {{ $labels.service }} is producing more than 1 HTTP {{ $labels.http_status }} error log per second over the last 10 minutes. Currently {{ $value | printf \"%.1f\" }}/s. Investigate immediately!"
           error_type: "HTTP {{ $labels.http_status }} Server Error"
           error_rate: "{{ $value | printf \"%.1f\" }}"
 
@@ -44,4 +44,4 @@ groups:
           severity: warning
         annotations:
           summary: "Error detected in {{ $labels.service }}"
-          description: "🚨 [Instan] Terdeteksi log Error (error/exception/panic) di aplikasi `{{ $labels.service }}` dalam 1 menit terakhir! Segera cek Grafana Loki!"
+          description: "🚨 [Instant] Error log (error/exception/panic) detected in application `{{ $labels.service }}` within the last 1 minute! Check Grafana Loki immediately!"

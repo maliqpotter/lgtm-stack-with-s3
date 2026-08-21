@@ -113,16 +113,16 @@ prometheus.scrape "blackbox_http" {
   params = {
     "module" = ["http_2xx"],
   }
-  // Langsung ke mimir agar label 'instance' tidak tertimpa
+  // Forward directly to mimir so the 'instance' label is not overwritten
   forward_to   = [prometheus.remote_write.mimir.receiver]
   job_name     = "blackbox-ssl"
 }
 
-// 2. Probing DNS Resolution (Tambahkan IP Server DNS di sini, misal DNS Server internal / 8.8.8.8)
+// 2. Probing DNS Resolution (Add your DNS Server IPs here, e.g. internal DNS / 8.8.8.8)
 discovery.relabel "blackbox_dns_targets" {
   targets = [
     {"__address__" = "8.8.8.8:53"},
-    // {"__address__" = "1.1.1.1:53"}, // <-- Cara menambahkan DNS lain
+    // {"__address__" = "1.1.1.1:53"}, // <-- How to add another DNS server
   ]
   rule {
     source_labels = ["__address__"]
@@ -144,7 +144,7 @@ prometheus.scrape "blackbox_dns" {
   params = {
     "module" = ["dns_udp"],
   }
-  // Langsung ke mimir agar label 'instance' tidak tertimpa nama server
+  // Forward directly to mimir so the 'instance' label is not overwritten by server name
   forward_to   = [prometheus.remote_write.mimir.receiver]
   job_name     = "blackbox-dns"
 }
