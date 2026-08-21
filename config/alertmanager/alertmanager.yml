@@ -12,8 +12,8 @@ route:
   # =============================================
   # Pilih salah satu receiver aktif di bawah ini:
   # =============================================
-  # receiver: 'telegram-notifications'
-  receiver: 'discord-notifications'
+  receiver: 'telegram-notifications'
+  # receiver: 'discord-notifications'
   # receiver: 'slack-notifications'
 
 receivers:
