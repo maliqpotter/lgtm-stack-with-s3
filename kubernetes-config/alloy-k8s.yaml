@@ -7,7 +7,7 @@ metadata:
   namespace: monitoring
 data:
   CLUSTER_NAME: "kubernetes" # <--- UBAH INI sesuai nama cluster Anda
-  MONITORING_ENDPOINT: "192.171.171.26:4317" # <--- UBAH INI dengan IP Server Anda
+  MONITORING_ENDPOINT: "192.172.25.102:4317" # <--- UBAH INI dengan IP Server Anda
 ---
 # Source: alloy/templates/serviceaccount.yaml
 apiVersion: v1
