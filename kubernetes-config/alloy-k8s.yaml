@@ -92,11 +92,11 @@ data:
       }
     }
 
-    // 4. Scrape: Ambil data metrics dari node-exporter (CPU, RAM, Disk, Network)
     prometheus.scrape "node_exporter" {
       targets    = discovery.relabel.node_exporter.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "node-exporter"
+      scrape_interval = "15s"
     }
 
     // --- KUBELET & CADVISOR PIPELINE ---
@@ -119,6 +119,7 @@ data:
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "kubelet"
       scheme     = "https"
+      scrape_interval = "15s"
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
         insecure_skip_verify = true
@@ -131,6 +132,7 @@ data:
       job_name   = "kubelet"
       scheme     = "https"
       metrics_path = "/metrics/cadvisor"
+      scrape_interval = "15s"
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
         insecure_skip_verify = true
@@ -180,6 +182,7 @@ data:
       targets    = discovery.relabel.coredns.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "coredns"
+      scrape_interval = "15s"
     }
 
     // --- KUBERNETES API SERVER PIPELINE ---
