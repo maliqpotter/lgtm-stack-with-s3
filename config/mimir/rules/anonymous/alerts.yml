@@ -8,7 +8,7 @@ groups:
       # Website / Endpoint Down
       - alert: EndpointDown
         expr: probe_success == 0
-        for: 1m
+        for: 15m
         labels:
           severity: critical
         annotations:

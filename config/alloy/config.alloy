@@ -92,7 +92,6 @@ prometheus.relabel "local_labels" {
 discovery.relabel "blackbox_http_targets" {
   targets = [
     {"__address__" = "https://google.com"},
-    {"__address__" = "https://httpstat.us/500"},
   ]
   rule {
     source_labels = ["__address__"]
