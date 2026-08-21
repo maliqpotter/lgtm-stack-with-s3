@@ -71,3 +71,4 @@ limits:
   native_histograms_ingestion_enabled: true
   compactor_blocks_retention_period: 72h
   max_label_names_per_series: 120
+  out_of_order_time_window: 30m
