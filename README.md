@@ -97,3 +97,12 @@ kubectl apply -f test-app-k8s.yaml
    - **Logs**: Explore -> Loki -> `{app="test-app"}` or `{service_name="test-api"}`.
    - **Metrics**: Explore -> Mimir -> `http_requests_total`.
    - **Node Dashboard**: Import Dashboard ID `1860` to view hardware metrics from Node Exporter.
+
+## Recommended Grafana Dashboards
+
+Untuk mempermudah monitoring, berikut adalah list Grafana Dashboards yang direkomendasikan dan kompatibel dengan setup ini:
+
+- **Domain Monitoring**: [Symphony Domain (ID: 23131)](https://grafana.com/grafana/dashboards/23131-symphony-domain/)
+- **Docker cAdvisor**: [cAdvisor Exporter Docker Containers Overview (ID: 21743)](https://grafana.com/grafana/dashboards/21743-cadvisor-exporter-docker-containers-overview/)
+- **Node Exporter**: [Node Exporter Dashboard (ID: 24784)](https://grafana.com/grafana/dashboards/24784-node-exporter-dashboard-20240520/)
+- **Kubernetes Dashboard**: [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes)
