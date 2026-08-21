@@ -179,7 +179,7 @@ data:
     prometheus.scrape "coredns" {
       targets    = discovery.relabel.coredns.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
-      job_name   = "kube-dns"
+      job_name   = "coredns"
     }
 
     // --- KUBERNETES API SERVER PIPELINE ---
