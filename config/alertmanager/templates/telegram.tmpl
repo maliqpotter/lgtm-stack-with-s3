@@ -1,0 +1,221 @@
+{{/* ============================================ */}}
+{{/* TELEGRAM DISPATCHER                          */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message" -}}
+{{ if eq .GroupLabels.alertname "EndpointDown" }}{{ template "telegram.message.website" . -}}
+{{ else if eq .GroupLabels.alertname "DomainExpiringSoon" }}{{ template "telegram.message.domain" . -}}
+{{ else if eq .GroupLabels.alertname "HighMemoryUsage" }}{{ template "telegram.message.ram" . -}}
+{{ else if eq .GroupLabels.alertname "HighCPUUsage" }}{{ template "telegram.message.cpu" . -}}
+{{ else if eq .GroupLabels.alertname "DiskSpaceLow" }}{{ template "telegram.message.disk" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP4xxRate" }}{{ template "telegram.message.logerror" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP5xxRate" }}{{ template "telegram.message.logerror" . -}}
+{{ else }}{{ range .Alerts }}
+⚠️ <b>{{ .Labels.alertname }}</b>
+<b>Status:</b> {{ .Status }}
+<b>Instance:</b> {{ .Labels.instance }}
+<b>Summary:</b> {{ .Annotations.summary }}
+{{ end }}{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* WEBSITE                                      */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.website" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}🌐 <b>WEBSITE DOWN</b>{{ else }}✅ <b>WEBSITE UP</b>{{ end }} — <code>{{ or .Labels.exported_instance .Labels.instance }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🌍 <b>Target</b>
+<b>URL:</b> <code>{{ or .Labels.exported_instance .Labels.instance }}</code>
+{{ if .Annotations.site_name }}<b>Site:</b> {{ .Annotations.site_name }}{{ end }}
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}{{ end }}
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Situs {{ or .Annotations.site_name .Labels.instance }} sudah kembali online. Layanan normal.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Downtime:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* DOMAIN / SSL EXPIRY                          */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.domain" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}🌐 <b>DOMAIN EXPIRING SOON</b>{{ else }}✅ <b>DOMAIN RENEWED</b>{{ end }} — <code>{{ or .Labels.domain .Labels.instance }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🌍 <b>Target</b>
+<b>Domain:</b> <code>{{ or .Labels.domain .Labels.instance }}</code>
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}{{ end }}
+{{ if .Labels.team }}<b>Team:</b> {{ .Labels.team }}{{ end }}
+
+📅 <b>Domain Info</b>
+<b>Days Left:</b> {{ if .Annotations.days_left }}{{ .Annotations.days_left }} days{{ else }}N/A{{ end }}
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Domain {{ or .Labels.domain .Labels.instance }} telah diperbarui atau tidak lagi mendekati masa expired.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Duration:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* RAM / MEMORY                                 */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.ram" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}🧠 <b>HIGH MEMORY USAGE</b>{{ else }}✅ <b>MEMORY USAGE NORMALIZED</b>{{ end }} — <code>{{ or .Annotations.node_name .Labels.instance }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🖥️ <b>Target</b>
+<b>Datasource:</b> <code>{{ .Labels.job }}</code>
+{{ if .Annotations.node_name }}<b>Node:</b> <code>{{ .Annotations.node_name }}</code>{{ end }}
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}{{ end }}
+
+📊 <b>Memory Usage</b>
+<b>Used RAM:</b> {{ .Annotations.used_memory_percent }}%
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan memori pada {{ or .Annotations.node_name .Labels.instance }} telah kembali normal. Sistem stabil.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Duration:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* CPU                                          */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.cpu" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}💻 <b>HIGH CPU USAGE</b>{{ else }}✅ <b>CPU USAGE NORMALIZED</b>{{ end }} — <code>{{ or .Annotations.node_name .Labels.instance }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🖥️ <b>Target</b>
+<b>Datasource:</b> <code>{{ .Labels.job }}</code>
+{{ if .Annotations.node_name }}<b>Node:</b> <code>{{ .Annotations.node_name }}</code>{{ end }}
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}{{ end }}
+
+📊 <b>CPU Usage</b>
+<b>Used CPU:</b> {{ .Annotations.used_cpu_percent }}%
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan CPU pada {{ or .Annotations.node_name .Labels.instance }} telah kembali normal. Sistem stabil.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Duration:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* DISK                                         */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.disk" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}💾 <b>DISK SPACE LOW</b>{{ else }}✅ <b>DISK SPACE NORMALIZED</b>{{ end }} — <code>{{ or .Annotations.node_name .Labels.instance }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🖥️ <b>Target</b>
+<b>Datasource:</b> <code>{{ .Labels.job }}</code>
+{{ if .Annotations.node_name }}<b>Node:</b> <code>{{ .Annotations.node_name }}</code>{{ end }}
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}{{ end }}
+
+💾 <b>Disk Usage</b>
+<b>Used Disk:</b> {{ .Annotations.used_disk_percent }}%
+<b>Mount Point:</b> <code>{{ .Labels.mountpoint }}</code>
+<b>Filesystem:</b> <code>{{ .Labels.device }}</code>
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan disk pada {{ or .Annotations.node_name .Labels.instance }} ({{ .Labels.mountpoint }}) telah kembali normal.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Duration:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* LOG ERROR (HTTP 4xx / 5xx)                   */}}
+{{/* ============================================ */}}
+
+{{ define "telegram.message.logerror" -}}
+{{ range .Alerts }}
+{{ if eq .Status "firing" }}📭 <b>HTTP ERROR DETECTED</b>{{ else }}✅ <b>HTTP ERRORS RESOLVED</b>{{ end }} — <code>{{ .Labels.job }}</code>
+
+📋 <b>Alert Information</b>
+<b>Alert:</b> <code>{{ .Labels.alertname }}</code>
+<b>Severity:</b> {{ if eq .Labels.severity "critical" }}🚨 <b>Critical</b>{{ else if eq .Labels.severity "warning" }}⚠️ <b>Warning</b>{{ else }}ℹ️ <b>Info</b>{{ end }}
+<b>Status:</b> {{ if eq .Status "firing" }}🔴 <b>Firing</b>{{ else }}🟢 <b>Resolved</b>{{ end }}
+
+🖥️ <b>Target</b>
+<b>Job:</b> <code>{{ .Labels.job }}</code>
+<b>Error Type:</b> {{ .Annotations.error_type }}
+
+📊 <b>Error Rate</b>
+<b>Rate:</b> {{ .Annotations.error_rate }} errors/s
+
+📖 <b>Details</b>
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Tingkat error HTTP pada {{ .Labels.job }} telah kembali normal.{{ end }}
+
+{{ if eq .Status "firing" }}⏰ <b>Started:</b> {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 <b>Finished:</b> {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ <b>Duration:</b> {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <a href="{{ .GeneratorURL }}">View Source</a>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}

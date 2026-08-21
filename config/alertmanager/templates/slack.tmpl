@@ -1,0 +1,36 @@
+{{/* ============================================ */}}
+{{/* SLACK DISPATCHER                             */}}
+{{/* ============================================ */}}
+
+{{ define "slack.title" -}}
+{{ if eq .GroupLabels.alertname "EndpointDown" }}{{ if eq .Status "firing" }}🌐 WEBSITE DOWN{{ else }}✅ WEBSITE UP{{ end }} - {{ .GroupLabels.instance -}}
+{{ else if eq .GroupLabels.alertname "DomainExpiringSoon" }}{{ if eq .Status "firing" }}🌐 DOMAIN EXPIRING SOON{{ else }}✅ DOMAIN RENEWED{{ end }} - {{ .GroupLabels.instance -}}
+{{ else if eq .GroupLabels.alertname "HighMemoryUsage" }}{{ if eq .Status "firing" }}🧠 HIGH MEMORY USAGE{{ else }}✅ MEMORY NORMALIZED{{ end }} - {{ .GroupLabels.instance -}}
+{{ else if eq .GroupLabels.alertname "HighCPUUsage" }}{{ if eq .Status "firing" }}💻 HIGH CPU USAGE{{ else }}✅ CPU NORMALIZED{{ end }} - {{ .GroupLabels.instance -}}
+{{ else if eq .GroupLabels.alertname "DiskSpaceLow" }}{{ if eq .Status "firing" }}💾 DISK SPACE LOW{{ else }}✅ DISK NORMALIZED{{ end }} - {{ .GroupLabels.instance -}}
+{{ else }}⚠️ {{ .GroupLabels.alertname }} - {{ .GroupLabels.instance }}{{ end -}}
+{{ end }}
+
+{{ define "slack.message" -}}
+{{ range .Alerts }}
+*📋 Alert Information*
+*Alert:* `{{ .Labels.alertname }}`
+*Severity:* {{ if eq .Labels.severity "critical" }}🚨 *Critical*{{ else if eq .Labels.severity "warning" }}⚠️ *Warning*{{ else }}ℹ️ *Info*{{ end }}
+*Status:* {{ if eq .Status "firing" }}🔴 *Firing*{{ else }}🟢 *Resolved*{{ end }}
+
+*🖥️ Target*
+*Instance:* `{{ .Labels.instance }}`
+{{ if .Annotations.node_name }}*Node:* `{{ .Annotations.node_name }}`{{ end }}
+
+*📖 Details*
+*Summary:* {{ .Annotations.summary }}
+*Description:* {{ .Annotations.description }}
+
+{{ if eq .Status "firing" }}⏰ *Started:* {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}🏁 *Finished:* {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ *Duration:* {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+{{ if .GeneratorURL }}🔗 <{{ .GeneratorURL }}|View Source>{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}

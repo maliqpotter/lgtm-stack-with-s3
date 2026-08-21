@@ -1,0 +1,262 @@
+{{/* ============================================ */}}
+{{/* DISCORD DISPATCHER                          */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title" -}}
+{{ if eq .GroupLabels.alertname "EndpointDown" }}{{ template "discord.title.website" . -}}
+{{ else if eq .GroupLabels.alertname "DomainExpiringSoon" }}{{ template "discord.title.domain" . -}}
+{{ else if eq .GroupLabels.alertname "HighMemoryUsage" }}{{ template "discord.title.ram" . -}}
+{{ else if eq .GroupLabels.alertname "HighCPUUsage" }}{{ template "discord.title.cpu" . -}}
+{{ else if eq .GroupLabels.alertname "DiskSpaceLow" }}{{ template "discord.title.disk" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP4xxRate" }}{{ template "discord.title.logerror" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP5xxRate" }}{{ template "discord.title.logerror" . -}}
+{{ else }}⚠️ Alert: {{ .GroupLabels.alertname }} — {{ .GroupLabels.instance }}{{ end -}}
+{{ end }}
+
+{{ define "discord.message" -}}
+{{ if eq .GroupLabels.alertname "EndpointDown" }}{{ template "discord.message.website" . -}}
+{{ else if eq .GroupLabels.alertname "DomainExpiringSoon" }}{{ template "discord.message.domain" . -}}
+{{ else if eq .GroupLabels.alertname "HighMemoryUsage" }}{{ template "discord.message.ram" . -}}
+{{ else if eq .GroupLabels.alertname "HighCPUUsage" }}{{ template "discord.message.cpu" . -}}
+{{ else if eq .GroupLabels.alertname "DiskSpaceLow" }}{{ template "discord.message.disk" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP4xxRate" }}{{ template "discord.message.logerror" . -}}
+{{ else if eq .GroupLabels.alertname "HighHTTP5xxRate" }}{{ template "discord.message.logerror" . -}}
+{{ else }}{{ range .Alerts }}
+**Alert:** `{{ .Labels.alertname }}`
+**Status:** {{ .Status }}
+**Instance:** {{ .Labels.instance }}
+**Summary:** {{ .Annotations.summary }}
+{{ end }}{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* WEBSITE                                      */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.website" -}}
+{{ if eq .Status "firing" }}🌐 WEBSITE DOWN{{ else }}✅ WEBSITE UP{{ end }} - {{ .GroupLabels.instance }}
+{{- end }}
+
+{{ define "discord.message.website" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🌍 Target**
+**URL:** `{{ or .Labels.exported_instance .Labels.instance }}`
+{{ if .Annotations.site_name }}**Site:** {{ .Annotations.site_name }}{{ end }}
+{{ if .Labels.service }}**Service:** {{ .Labels.service }}{{ end }}
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Situs {{ or .Annotations.site_name .Labels.instance }} sudah kembali online. Layanan normal.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Downtime:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* DOMAIN / SSL EXPIRY                          */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.domain" -}}
+{{ if eq .Status "firing" }}🌐 DOMAIN EXPIRING SOON{{ else }}✅ DOMAIN RENEWED{{ end }} - {{ .GroupLabels.instance }}
+{{- end }}
+
+{{ define "discord.message.domain" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🌍 Target**
+**Domain:** `{{ or .Labels.domain .Labels.instance }}`
+{{ if .Labels.service }}**Service:** {{ .Labels.service }}{{ end }}
+{{ if .Labels.team }}**Team:** {{ .Labels.team }}{{ end }}
+
+**📅 Domain Info**
+**Days Left:** {{ if .Annotations.days_left }}{{ .Annotations.days_left }} days{{ else }}N/A{{ end }}
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Domain {{ or .Labels.domain .Labels.instance }} telah diperbarui atau tidak lagi mendekati masa expired.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Duration:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* RAM / MEMORY                                 */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.ram" -}}
+{{ if eq .Status "firing" }}🧠 HIGH MEMORY USAGE{{ else }}✅ MEMORY USAGE NORMALIZED{{ end }} - {{ .GroupLabels.instance }}
+{{- end }}
+
+{{ define "discord.message.ram" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🖥️ Target**
+**Datasource:** `{{ .Labels.job }}`
+{{ if .Annotations.node_name }}**Node:** `{{ .Annotations.node_name }}`{{ end }}
+{{ if .Labels.service }}**Service:** {{ .Labels.service }}{{ end }}
+
+**📊 Memory Usage**
+**Used RAM:** {{ .Annotations.used_memory_percent }}%
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan memori pada {{ or .Annotations.node_name .Labels.instance }} telah kembali normal. Sistem stabil.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Duration:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* CPU                                          */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.cpu" -}}
+{{ if eq .Status "firing" }}💻 HIGH CPU USAGE{{ else }}✅ CPU USAGE NORMALIZED{{ end }} - {{ .GroupLabels.instance }}
+{{- end }}
+
+{{ define "discord.message.cpu" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🖥️ Target**
+**Datasource:** `{{ .Labels.job }}`
+{{ if .Annotations.node_name }}**Node:** `{{ .Annotations.node_name }}`{{ end }}
+{{ if .Labels.service }}**Service:** {{ .Labels.service }}{{ end }}
+
+**📊 CPU Usage**
+**Used CPU:** {{ .Annotations.used_cpu_percent }}%
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan CPU pada {{ or .Annotations.node_name .Labels.instance }} telah kembali normal. Sistem stabil.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Duration:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* DISK                                         */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.disk" -}}
+{{ if eq .Status "firing" }}💾 DISK SPACE LOW{{ else }}✅ DISK SPACE NORMALIZED{{ end }} - {{ .GroupLabels.instance }}
+{{- end }}
+
+{{ define "discord.message.disk" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🖥️ Target**
+**Datasource:** `{{ .Labels.job }}`
+{{ if .Annotations.node_name }}**Node:** `{{ .Annotations.node_name }}`{{ end }}
+{{ if .Labels.service }}**Service:** {{ .Labels.service }}{{ end }}
+
+**💾 Disk Usage**
+**Used Disk:** {{ .Annotations.used_disk_percent }}%
+**Mount Point:** `{{ .Labels.mountpoint }}`
+**Filesystem:** `{{ .Labels.device }}`
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Penggunaan disk pada {{ or .Annotations.node_name .Labels.instance }} ({{ .Labels.mountpoint }}) telah kembali normal.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Duration:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}
+
+{{/* ============================================ */}}
+{{/* LOG ERROR (HTTP 4xx / 5xx)                   */}}
+{{/* ============================================ */}}
+
+{{ define "discord.title.logerror" -}}
+{{ if eq .Status "firing" }}📛 HTTP ERROR DETECTED{{ else }}✅ HTTP ERRORS RESOLVED{{ end }} - {{ .GroupLabels.job }}
+{{- end }}
+
+{{ define "discord.message.logerror" -}}
+{{ range .Alerts }}
+**📋 Alert Information**
+**Alert:** `{{ .Labels.alertname }}`
+**Severity:** {{ if eq .Labels.severity "critical" }}🚨 **Critical**{{ else if eq .Labels.severity "warning" }}⚠️ **Warning**{{ else }}ℹ️ **Info**{{ end }}
+**Status:** {{ if eq .Status "firing" }}🔴 **Firing**{{ else }}🟢 **Resolved**{{ end }}
+
+**🖥️ Target**
+**Job:** `{{ .Labels.job }}`
+**Error Type:** {{ .Annotations.error_type }}
+
+**📊 Error Rate**
+**Rate:** {{ .Annotations.error_rate }} errors/s
+
+**📖 Details**
+**Summary:** {{ .Annotations.summary }}
+**Description:** {{ if eq .Status "firing" }}{{ .Annotations.description }}{{ else }}Tingkat error HTTP pada {{ .Labels.job }} telah kembali normal.{{ end }}
+
+{{ if eq .Status "firing" }}
+⏰ **Started:** {{ .StartsAt.Local.Format "02 Jan 2006 15:04:05" }}
+{{ else }}
+🏁 **Finished:** {{ .EndsAt.Local.Format "02 Jan 2006 15:04:05" }}
+⏱️ **Duration:** {{ .EndsAt.Sub .StartsAt }}
+{{ end }}
+
+{{ if .GeneratorURL }}**🔗 [View Source]({{ .GeneratorURL }})**{{ end }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{ end -}}
+{{ end }}

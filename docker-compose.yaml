@@ -104,13 +104,23 @@ services:
       - monitoring
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.33.1
     container_name: alertmanager
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
     ports:
       - "9093:9093"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-your-telegram-bot-token}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-0}
+      - TELEGRAM_MESSAGE_THREAD_ID=${TELEGRAM_MESSAGE_THREAD_ID:-0}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/your-webhook-url}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/your-webhook-url}
     volumes:
-      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml.tmpl:ro
+      - ./config/alertmanager/entrypoint.sh:/etc/alertmanager/entrypoint.sh:ro
+      - ./config/alertmanager/templates:/etc/alertmanager/templates:ro
     networks:
       - monitoring
 
