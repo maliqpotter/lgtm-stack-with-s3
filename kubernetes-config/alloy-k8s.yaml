@@ -69,6 +69,7 @@ data:
 
     // 2. Scrape: Ambil data metrics dari kube-state-metrics
     prometheus.scrape "kube_state_metrics" {
+      clustering { enabled = true }
       targets    = discovery.relabel.kube_state_metrics.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "kube-state-metrics"
@@ -93,6 +94,7 @@ data:
     }
 
     prometheus.scrape "node_exporter" {
+      clustering { enabled = true }
       targets    = discovery.relabel.node_exporter.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "node-exporter"
@@ -179,6 +181,7 @@ data:
     }
 
     prometheus.scrape "coredns" {
+      clustering { enabled = true }
       targets    = discovery.relabel.coredns.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "coredns"
@@ -200,6 +203,7 @@ data:
     }
 
     prometheus.scrape "apiserver" {
+      clustering { enabled = true }
       targets    = discovery.relabel.apiserver.output
       forward_to = [prometheus.relabel.add_cluster.receiver]
       job_name   = "apiserver"
@@ -508,6 +512,8 @@ spec:
             - --server.http.ui-path-prefix=/
             - --stability.level=generally-available
             - --disable-reporting
+            - --cluster.enabled=true
+            - --cluster.join-addresses=alloy.monitoring.svc.cluster.local:12345
           envFrom:
             - configMapRef:
                 name: alloy-env
