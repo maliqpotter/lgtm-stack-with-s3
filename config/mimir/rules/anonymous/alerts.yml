@@ -1,0 +1,12 @@
+groups:
+  - name: blackbox-alerts
+    interval: 5m
+    rules:
+      - alert: EndpointDown
+        expr: probe_success == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Endpoint {{ $labels.instance }} is DOWN"
+          description: "The endpoint {{ $labels.instance }} has failed the Blackbox probe for more than 15 minutes (3 consecutive checks)."

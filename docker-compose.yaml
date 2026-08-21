@@ -92,12 +92,24 @@ services:
     command: ["-config.file=/etc/mimir/config.yaml", "-config.expand-env=true"]
     volumes:
       - ./config/mimir/mimir-config.yml:/etc/mimir/config.yaml:ro
+      - ./config/mimir/rules:/etc/mimir/rules:ro
       - mimir-data:/tmp/mimir
 #   ports:
 #     - "9009:9009"
     depends_on:
       minio-init:
         condition: service_completed_successfully
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     networks:
       - monitoring
 
