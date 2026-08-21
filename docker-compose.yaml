@@ -7,9 +7,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-#   ports:
-#     - "9000:9000"   # S3 API
-#     - "9001:9001"   # Web Console
     volumes:
       - minio-data:/data
     healthcheck:
@@ -18,7 +15,8 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.2
 
   minio-init:
     image: ghcr.io/maliqpotter/mc:latest
@@ -41,15 +39,13 @@ services:
       echo 'Buckets created and lifecycle policies applied successfully';
       "
     networks:
-      - monitoring
+      monitoring:
 
   loki:
     image: ghcr.io/maliqpotter/loki:3.7
     container_name: loki
     restart: unless-stopped
     user: root
-#   ports:
-#     - "3100:3100"
     volumes:
       - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - ./config/loki/rules:/etc/loki/rules:ro
@@ -62,7 +58,8 @@ services:
       minio-init:
         condition: service_completed_successfully
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.3
 
   tempo:
     image: ghcr.io/maliqpotter/tempo:2.10.5
@@ -75,13 +72,12 @@ services:
     volumes:
       - ./config/tempo/tempo.yml:/etc/tempo.yaml:ro
       - tempo-data:/var/tempo
-#   ports:
-#     - "3200:3200"   # HTTP API
     depends_on:
       minio-init:
         condition: service_completed_successfully
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.4
 
   mimir:
     image: ghcr.io/maliqpotter/mimir:3.0.6
@@ -95,13 +91,12 @@ services:
       - ./config/mimir/mimir-config.yml:/etc/mimir/config.yaml:ro
       - ./config/mimir/rules:/etc/mimir/rules:ro
       - mimir-data:/tmp/mimir
-#   ports:
-#     - "9009:9009"
     depends_on:
       minio-init:
         condition: service_completed_successfully
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.5
 
   alertmanager:
     image: prom/alertmanager:v0.33.1
@@ -109,8 +104,6 @@ services:
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
     command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
-    ports:
-      - "9093:9093"
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-your-telegram-bot-token}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:--1}
@@ -122,7 +115,8 @@ services:
       - ./config/alertmanager/entrypoint.sh:/etc/alertmanager/entrypoint.sh:ro
       - ./config/alertmanager/templates:/etc/alertmanager/templates:ro
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.6
 
   alloy:
     image: ghcr.io/maliqpotter/alloy:v1.16.1
@@ -131,10 +125,10 @@ services:
     privileged: true
     environment:
       - HOSTNAME=${HOSTNAME:-monitoring-server}
-#    ports:
-#      - "12345:12345"  # Alloy UI (Hanya via Localhost / SSH Tunnel)
-#      - "4317:4317"             # OTLP gRPC
-#      - "4318:4318"             # OTLP HTTP
+    # Port OTLP tetap di-expose untuk menerima data dari Kubernetes / server lain
+    ports:
+      - "4317:4317"   # OTLP gRPC (untuk K8s → Alloy)
+      - "4318:4318"   # OTLP HTTP
     volumes:
       - ./config/alloy/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
@@ -144,7 +138,8 @@ services:
       - /etc/alloy/config.alloy
       - --disable-reporting
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.7
     depends_on:
       - loki
       - tempo
@@ -163,10 +158,9 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-#   ports:
-#     - "9100:9100"
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.8
 
   cadvisor:
     image: ghcr.io/google/cadvisor:0.57.0
@@ -184,10 +178,9 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
-#   ports:
-#     - "8080:8080"
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.9
 
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.25.0
@@ -195,15 +188,15 @@ services:
     restart: unless-stopped
     volumes:
       - ./config/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
-#   ports:
-#     - "9115:9115"
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.10
 
   grafana:
     image: ghcr.io/maliqpotter/grafana-oss:13.0.1-security-01
     container_name: grafana
     restart: unless-stopped
+    # Port Grafana tetap di-expose untuk akses browser dari luar server
     ports:
       - "3000:3000"
     environment:
@@ -226,7 +219,8 @@ services:
       - tempo
       - mimir
     networks:
-      - monitoring
+      monitoring:
+        ipv4_address: 177.20.0.11
 
 volumes:
   minio-data:
@@ -243,4 +237,4 @@ volumes:
 networks:
   monitoring:
     name: monitoring
-    driver: bridge
+    external: true
