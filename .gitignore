@@ -15,3 +15,6 @@ Thumbs.db
 
 # Docker volumes (if local)
 data/
+
+# SSL Certificates (self-signed)
+config/grafana/certs/
