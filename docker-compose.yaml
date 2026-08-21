@@ -99,7 +99,7 @@ services:
         ipv4_address: 177.20.0.5
 
   alertmanager:
-    image: prom/alertmanager:v0.33.1
+    image: ghcr.io/maliqpotter/alertmanager:v0.33.1
     container_name: alertmanager
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
@@ -167,7 +167,7 @@ services:
         ipv4_address: 177.20.0.8
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:0.57.0
+    image: ghcr.io/maliqpotter/cadvisor:0.57.0
     container_name: cadvisor
     restart: unless-stopped
     privileged: true
@@ -187,7 +187,7 @@ services:
         ipv4_address: 177.20.0.9
 
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.25.0
+    image: ghcr.io/maliqpotter/blackbox-exporter:v0.25.0
     container_name: blackbox-exporter
     restart: unless-stopped
     volumes:
