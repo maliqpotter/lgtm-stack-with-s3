@@ -103,7 +103,7 @@ services:
     container_name: alertmanager
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
-    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager", "--cluster.advertise-address=172.20.0.6:9094"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-your-telegram-bot-token}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:--1}

@@ -4,8 +4,6 @@ target: all
 
 multitenancy_enabled: false
 
-memberlist:
-  advertise_addr: 172.20.0.5
 
 server:
   http_listen_port: 9009
