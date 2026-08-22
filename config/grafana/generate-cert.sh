@@ -22,7 +22,7 @@ openssl req -x509 -nodes -newkey rsa:2048 \
   -addext "subjectAltName=IP:${IP},IP:127.0.0.1,DNS:localhost,DNS:grafana"
 
 chmod 644 "$CERT_DIR/grafana.crt"
-chmod 600 "$CERT_DIR/grafana.key"
+chmod 644 "$CERT_DIR/grafana.key"
 
 echo "✅ Certificate generated successfully!"
 echo "   📄 Certificate: $CERT_DIR/grafana.crt"
