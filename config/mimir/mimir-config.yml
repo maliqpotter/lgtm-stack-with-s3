@@ -4,6 +4,9 @@ target: all
 
 multitenancy_enabled: false
 
+memberlist:
+  advertise_addr: 177.20.0.5
+
 server:
   http_listen_port: 9009
   grpc_listen_port: 9095
