@@ -56,21 +56,21 @@ Access endpoints:
 
 ## Network Architecture
 
-All containers use static IPs on the `177.20.0.0/28` subnet for security and easy access between services on the same server.
+All containers use static IPs on the `172.20.0.0/28` subnet for security and easy access between services on the same server.
 
 | Container | IP Address | Port |
 |---|---|---|
-| Gateway | `177.20.0.1` | — |
-| MinIO | `177.20.0.2` | `9000` (S3 API), `9001` (Console) |
-| Loki | `177.20.0.3` | `3100` |
-| Tempo | `177.20.0.4` | `3200` (HTTP), `4317` (OTLP gRPC) |
-| Mimir | `177.20.0.5` | `9009` |
-| Alertmanager | `177.20.0.6` | `9093` |
-| Alloy | `177.20.0.7` | `12345` (UI), `4317` (OTLP gRPC), `4318` (OTLP HTTP) |
-| Node Exporter | `177.20.0.8` | `9100` |
-| cAdvisor | `177.20.0.9` | `8080` |
-| Blackbox Exporter | `177.20.0.10` | `9115` |
-| Grafana | `177.20.0.11` | `3000` |
+| Gateway | `172.20.0.1` | — |
+| MinIO | `172.20.0.2` | `9000` (S3 API), `9001` (Console) |
+| Loki | `172.20.0.3` | `3100` |
+| Tempo | `172.20.0.4` | `3200` (HTTP), `4317` (OTLP gRPC) |
+| Mimir | `172.20.0.5` | `9009` |
+| Alertmanager | `172.20.0.6` | `9093` |
+| Alloy | `172.20.0.7` | `12345` (UI), `4317` (OTLP gRPC), `4318` (OTLP HTTP) |
+| Node Exporter | `172.20.0.8` | `9100` |
+| cAdvisor | `172.20.0.9` | `8080` |
+| Blackbox Exporter | `172.20.0.10` | `9115` |
+| Grafana | `172.20.0.11` | `3000` |
 
 > **Note**: Only the Grafana port (`3000`) is exposed publicly. All other services are only accessible via their internal IP from the same server.
 
@@ -83,7 +83,7 @@ services:
   my-app:
     image: my-app:latest
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://177.20.0.7:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://172.20.0.7:4317
     networks:
       - monitoring
 
@@ -92,7 +92,7 @@ networks:
     external: true
 ```
 
-If your application runs directly on the host (non-Docker), simply point it to `177.20.0.7:4317`.
+If your application runs directly on the host (non-Docker), simply point it to `172.20.0.7:4317`.
 
 ## HTTPS (Self-Signed Certificate)
 

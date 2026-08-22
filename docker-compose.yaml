@@ -16,7 +16,7 @@ services:
       retries: 5
     networks:
       monitoring:
-        ipv4_address: 177.20.0.2
+        ipv4_address: 172.20.0.2
 
   minio-init:
     image: ghcr.io/maliqpotter/mc:latest
@@ -59,7 +59,7 @@ services:
         condition: service_completed_successfully
     networks:
       monitoring:
-        ipv4_address: 177.20.0.3
+        ipv4_address: 172.20.0.3
 
   tempo:
     image: ghcr.io/maliqpotter/tempo:2.10.5
@@ -77,7 +77,7 @@ services:
         condition: service_completed_successfully
     networks:
       monitoring:
-        ipv4_address: 177.20.0.4
+        ipv4_address: 172.20.0.4
 
   mimir:
     image: ghcr.io/maliqpotter/mimir:3.0.6
@@ -96,14 +96,14 @@ services:
         condition: service_completed_successfully
     networks:
       monitoring:
-        ipv4_address: 177.20.0.5
+        ipv4_address: 172.20.0.5
 
   alertmanager:
     image: ghcr.io/maliqpotter/alertmanager:v0.33.1
     container_name: alertmanager
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
-    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager", "--cluster.advertise-address=177.20.0.6:9094"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager", "--cluster.advertise-address=172.20.0.6:9094"]
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-your-telegram-bot-token}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:--1}
@@ -116,7 +116,7 @@ services:
       - ./config/alertmanager/templates:/etc/alertmanager/templates:ro
     networks:
       monitoring:
-        ipv4_address: 177.20.0.6
+        ipv4_address: 172.20.0.6
 
   alloy:
     image: ghcr.io/maliqpotter/alloy:v1.16.1
@@ -127,7 +127,7 @@ services:
       - HOSTNAME=${HOSTNAME:-monitoring-server}
     # OTLP ports are NOT exposed publicly.
     # Applications on the same server can connect via:
-    #   - Host/other Docker: 177.20.0.7:4317 (gRPC) / 177.20.0.7:4318 (HTTP)
+    #   - Host/other Docker: 172.20.0.7:4317 (gRPC) / 172.20.0.7:4318 (HTTP)
     #   - Docker on monitoring network: alloy:4317 / alloy:4318
     # Uncomment if you need to receive data from a SEPARATE server (e.g. K8s on another host):
     # ports:
@@ -143,7 +143,7 @@ services:
       - --disable-reporting
     networks:
       monitoring:
-        ipv4_address: 177.20.0.7
+        ipv4_address: 172.20.0.7
     depends_on:
       - loki
       - tempo
@@ -164,7 +164,7 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
       monitoring:
-        ipv4_address: 177.20.0.8
+        ipv4_address: 172.20.0.8
 
   cadvisor:
     image: ghcr.io/maliqpotter/cadvisor:0.57.0
@@ -184,7 +184,7 @@ services:
       - /dev/disk:/dev/disk:ro
     networks:
       monitoring:
-        ipv4_address: 177.20.0.9
+        ipv4_address: 172.20.0.9
 
   blackbox-exporter:
     image: ghcr.io/maliqpotter/blackbox-exporter:v0.25.0
@@ -194,7 +194,7 @@ services:
       - ./config/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
     networks:
       monitoring:
-        ipv4_address: 177.20.0.10
+        ipv4_address: 172.20.0.10
 
   grafana:
     image: ghcr.io/maliqpotter/grafana-oss:13.0.1-security-01
@@ -224,7 +224,7 @@ services:
       - mimir
     networks:
       monitoring:
-        ipv4_address: 177.20.0.11
+        ipv4_address: 172.20.0.11
 
 volumes:
   minio-data:
